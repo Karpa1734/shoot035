@@ -87,18 +87,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8e80cdef3e97f1941babbe7155651f14, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  bulletPrefab: {fileID: 412534742802360219, guid: 77c4ce23d9179ce4fbb88e39b9867f7b, type: 3}
   status: {fileID: 3502787316831775910}
   bossSpriteRenderer: {fileID: 3732419982719443896}
   idleSprite: {fileID: 21300000, guid: 0379780ec68419245894c9c9261feee4, type: 3}
   movingSprite: {fileID: 21300000, guid: 0ca445e5969e947458147a968c478daa, type: 3}
   faceLeftByDefault: 0
-  aimedShotData: {fileID: 11400000, guid: 7f0f4d2078bae2a47abb259057cf4109, type: 2}
-  spiralShotData: {fileID: 11400000, guid: 7f0f4d2078bae2a47abb259057cf4109, type: 2}
-  moveAreaMin: {x: -5.8, y: 1.5}
-  moveAreaMax: {x: 1.8, y: 3}
-  defaultWeight: 20
-  defaultMaxSpeed: 5
 --- !u!50 &2848473911587207067
 Rigidbody2D:
   serializedVersion: 5
@@ -153,8 +146,43 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ba4c6afa8b269fd4a9dc47f4fe9ef03f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHP: 3000
-  flickerLifeThreshold: 200
+  phases:
+  - phaseName: NonSpell1
+    maxHP: 1000
+    type: 0
+    defense: 0.6
+    patternPrefab: {fileID: 1781038096083142761, guid: 238c22b2267671d49aaf857f60461da9, type: 3}
+    startsNewBar: 1
+    timeLimit: 10
+    bombDamageCut: 0
+  - phaseName: Spell1
+    maxHP: 300
+    type: 1
+    defense: 0.9
+    patternPrefab: {fileID: 7081024686200239551, guid: f4aace932eaf48f4da53aa38f2089b06, type: 3}
+    startsNewBar: 0
+    timeLimit: 35
+    bombDamageCut: 0
+  - phaseName: NonSpell2
+    maxHP: 1000
+    type: 0
+    defense: 0.6
+    patternPrefab: {fileID: 1781038096083142761, guid: 238c22b2267671d49aaf857f60461da9, type: 3}
+    startsNewBar: 1
+    timeLimit: 30
+    bombDamageCut: 0
+  - phaseName: Spell2
+    maxHP: 300
+    type: 1
+    defense: 0.9
+    patternPrefab: {fileID: 7081024686200239551, guid: f4aace932eaf48f4da53aa38f2089b06, type: 3}
+    startsNewBar: 0
+    timeLimit: 35
+    bombDamageCut: 0
+  bulletClearPrefab: {fileID: 6575740104421894055, guid: f24413bf391b54e41a2768d690b51a76, type: 3}
+  healthBarPrefab: {fileID: 2193791860109990607, guid: 86e7816db63040945a85fb4892729128, type: 3}
+  phaseThresholds: []
+  flickerLifeThreshold: 500
 --- !u!1 &9062793464921393976
 GameObject:
   m_ObjectHideFlags: 0

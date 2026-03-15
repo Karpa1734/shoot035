@@ -102,8 +102,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   speed: 20
-  damage: 1.5
+  damage: 2
   isHoming: 0
+  homingLimitTime: 1
+  homingSensitivity: 10
   hitSprite: {fileID: -977017114651529962, guid: 838110dae6b109a4da3e0ff958b36abe, type: 3}
   addMaterial: {fileID: 2100000, guid: b955a6fe290ae404496e5fc9dc6bd3da, type: 2}
   fadeTime: 0.2

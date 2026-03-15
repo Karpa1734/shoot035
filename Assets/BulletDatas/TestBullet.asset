@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 21264d726d8d3e24a9f6272f291feb5d, type: 3}
   m_Name: TestBullet
   m_EditorClassIdentifier: 
+  bulletPrefab: {fileID: 412534742802360219, guid: 77c4ce23d9179ce4fbb88e39b9867f7b, type: 3}
   sizeType: 2
   bulletSprite: {fileID: -1931150973853878096, guid: d29b5033959ad5b4a92af0e49964ff4e, type: 3}
   radius: 0.1
