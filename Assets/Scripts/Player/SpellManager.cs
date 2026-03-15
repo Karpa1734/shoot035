@@ -1,9 +1,9 @@
-using UnityEngine;
-using UnityEngine.UI; // UI操作のために追加
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq; // シャッフル用
-
+using UnityEngine;
+using UnityEngine.UI; // UI操作のために追加
+using KanKikuchi.AudioManager;
 public class SpellManager : MonoBehaviour
 {
     [Header("Prefabs")]
@@ -25,13 +25,28 @@ public class SpellManager : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.X) && !isOnSpell)
         {
-            StartCoroutine(ExecuteFantasySeal());
+            // 自機のインスタンスから HitHandler を取得
+            PlayerHitHandler hitHandler = PlayerMove.Instance.GetComponent<PlayerHitHandler>();
+
+            if (hitHandler != null)
+            {
+                // 通常時、または食らいボム猶予中のみ発動可能にする
+                if (hitHandler.currentState == PlayerHitHandler.PlayerState.Normal ||
+                    hitHandler.currentState == PlayerHitHandler.PlayerState.DeathBomb)
+                {
+                    StartCoroutine(ExecuteFantasySeal());
+                }
+            }
         }
     }
 
     IEnumerator ExecuteFantasySeal()
     {
         isOnSpell = true;
+        SEManager.Instance.Play(SEPath.SLASH, 0.5f);
+
+        SEManager.Instance.Play(SEPath.LASER7,0.5f);
+
         float invincibilityDuration = 320f / 60f; // 5.33秒
         if (spellUI != null)
         {
@@ -43,7 +58,7 @@ public class SpellManager : MonoBehaviour
 
         // 無敵時間を設定（285フレーム相当） [cite: 7]
         PlayerMove.Instance.SetInvincible(390f / 60f);
-
+        /*
         if (shockwavePrefab != null)
         {
             GameObject shock = Instantiate(shockwavePrefab, transform.position, Quaternion.identity);
@@ -51,10 +66,10 @@ public class SpellManager : MonoBehaviour
             if (logic != null)
             {
                 // 初期衝撃波は白（デフォルト）のままとします
-                logic.InitializeWithCustomScale(shockwaveSprite, Color.white, 1.0f, 0.05f);
+               // logic.InitializeWithCustomScale(shockwaveSprite, Color.white, 1.0f, 0.05f);
             }
         }
-
+        */
         // --- ホーミング順序のランダム化 ---
         int[] homingOrders = { 0, 1, 2, 3, 4, 5, 6, 7 };
         Shuffle(homingOrders); // 順番をバラバラにする
@@ -77,6 +92,7 @@ public class SpellManager : MonoBehaviour
         // --- 追加：背景の暗転を終了 ---
         if (darkOverlay != null) darkOverlay.SetActive(false);
 
+        SEManager.Instance.Play(SEPath.POWER36, 0.5f);
         isOnSpell = false;
     }
 

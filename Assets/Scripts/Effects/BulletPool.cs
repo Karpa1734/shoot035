@@ -5,17 +5,17 @@ public class BulletPool : MonoBehaviour
 {
     public static BulletPool Instance;
 
-    // ƒvƒŒƒnƒu‚²‚Æ‚ÉƒXƒ^ƒbƒNiİŒÉj‚ğŠÇ—‚·‚é«‘
     private Dictionary<GameObject, Stack<GameObject>> poolDict = new Dictionary<GameObject, Stack<GameObject>>();
 
     void Awake()
     {
-        Instance = this;
+        if (Instance == null) Instance = this;
     }
 
-    // ƒv[ƒ‹‚©‚ç’e‚ğæ“¾‚·‚é
     public GameObject Get(GameObject prefab, Vector3 position, Quaternion rotation)
     {
+        if (prefab == null) return null;
+
         if (!poolDict.ContainsKey(prefab))
         {
             poolDict[prefab] = new Stack<GameObject>();
@@ -24,26 +24,47 @@ public class BulletPool : MonoBehaviour
         GameObject obj;
         if (poolDict[prefab].Count > 0)
         {
-            // İŒÉ‚ª‚ ‚é‚È‚çÄ—˜—p
             obj = poolDict[prefab].Pop();
+
+            // ï¿½|ï¿½bï¿½vï¿½ï¿½ï¿½ï¿½ï¿½eï¿½ï¿½ï¿½ï¿½ï¿½É”jï¿½ó‚³‚ï¿½Ä‚ï¿½ï¿½ï¿½ï¿½ê‡ï¿½Ìˆï¿½ï¿½Sï¿½ï¿½
+            if (obj == null) return Get(prefab, position, rotation);
+
             obj.transform.position = position;
             obj.transform.rotation = rotation;
             obj.SetActive(true);
+
+            // --- ï¿½dï¿½vï¿½Fï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÌÄï¿½ï¿½ï¿½ï¿½ï¿½ ---
+            Rigidbody2D rb = obj.GetComponent<Rigidbody2D>();
+            if (rb != null)
+            {
+                rb.simulated = true; // ï¿½Oï¿½ï¿½ï¿½ Simulated ï¿½Iï¿½tï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½pï¿½ï¿½ï¿½È‚ï¿½ï¿½æ‚¤ï¿½É‹ï¿½ï¿½ï¿½ï¿½Iï¿½ï¿½
+                rb.linearVelocity = Vector2.zero;
+            }
         }
         else
         {
-            // İŒÉ‚ª‚È‚¢‚È‚çV‹K¶¬
             obj = Instantiate(prefab, position, rotation);
-            // ’e‘¤‚É‚Ç‚ÌƒvƒŒƒnƒu‚ÌİŒÉ‚É–ß‚é‚×‚«‚©‚ğ‹³‚¦‚éiŒãq‚ÌƒXƒNƒŠƒvƒg—pj
-            obj.GetComponent<EnemyBullet>().originPrefab = prefab;
+            EnemyBullet eb = obj.GetComponent<EnemyBullet>();
+            if (eb != null) eb.originPrefab = prefab;
         }
         return obj;
     }
 
-    // ƒv[ƒ‹‚É’e‚ğ–ß‚·i”ñƒAƒNƒeƒBƒu‰»j
     public void Release(GameObject prefab, GameObject obj)
     {
+        if (prefab == null || obj == null) return;
+
+        // ï¿½ï¿½ï¿½Å‚É”ï¿½Aï¿½Nï¿½eï¿½Bï¿½uï¿½iï¿½vï¿½[ï¿½ï¿½ï¿½Ï‚İjï¿½È‚ç‰½ï¿½ï¿½ï¿½ï¿½ï¿½È‚ï¿½ï¿½i2ï¿½dï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½Xï¿½hï¿½~ï¿½j
+        if (!obj.activeSelf) return;
+
         obj.SetActive(false);
+
+        // ï¿½Lï¿½[ï¿½ï¿½ï¿½È‚ï¿½ï¿½ê‡ï¿½Ö‚Ì‘Î‰ï¿½
+        if (!poolDict.ContainsKey(prefab))
+        {
+            poolDict[prefab] = new Stack<GameObject>();
+        }
+
         poolDict[prefab].Push(obj);
     }
 }

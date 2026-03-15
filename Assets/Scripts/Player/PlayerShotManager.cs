@@ -1,3 +1,4 @@
+using KanKikuchi.AudioManager;
 using UnityEngine;
 
 public class PlayerShotManager : MonoBehaviour
@@ -17,13 +18,22 @@ public class PlayerShotManager : MonoBehaviour
     private OptionManager optionManager;
     private float[] homingInitialAngles = { -20f, 20f, 10f, -10f };
 
+    private PlayerHitHandler hitHandler;
+
     void Start()
     {
         optionManager = GetComponent<OptionManager>();
+        // 同じオブジェクトにある PlayerHitHandler を取得
+        hitHandler = GetComponent<PlayerHitHandler>();
     }
-
     void Update()
     {
+        if (hitHandler == null || hitHandler.currentState != PlayerHitHandler.PlayerState.Normal)
+        {
+            mainTimer = 0;
+            subTimer = 0;
+            return;
+        }
         if (Input.GetKey(KeyCode.Z))
         {
             mainTimer -= Time.deltaTime;
@@ -51,6 +61,8 @@ public class PlayerShotManager : MonoBehaviour
 
     void FireMainShot()
     {
+
+        SEManager.Instance.Play(SEPath.SE_PLST00,0.5f);
         // Shot.txtのMainShot座標再現 (±8) [cite: 1, 2]
         Spawn(mainShotPrefab, transform.position + new Vector3(-0.18f, 0, 0));
         Spawn(mainShotPrefab, transform.position + new Vector3(0.18f, 0, 0));

@@ -1,6 +1,7 @@
-﻿using UnityEngine;
-using TMPro;
+﻿using KanKikuchi.AudioManager;
 using System.Collections;
+using TMPro;
+using UnityEngine;
 
 public class BossTimerUI : MonoBehaviour
 {
@@ -15,13 +16,18 @@ public class BossTimerUI : MonoBehaviour
     private Color warningColor = new Color(1f, 128f / 255f, 128f / 255f);
     private Color dangerColor = new Color(1f, 64f / 255f, 64f / 255f);
 
+    // --- 追加：SE用の設定 ---
+    [Header("SE Settings")]
+    public AudioSource audioSource;
+    public AudioClip countNormalSE; // 10秒〜5秒用
+    public AudioClip countDangerSE; // 4秒以下用
+
     [Header("Position Settings")]
     public float worldCenterX = -2.0f;
 
-    // --- 修正ポイント：位置の切り替え ---
     public float normalTopOffset = 50f;   // 通常時
-    public float spellTopOffset = 100f;  // スペルカード時（少し下げる）
-    private float currentTargetOffset;   // 現在目標としているオフセット
+    public float spellTopOffset = 100f;  // スペルカード時
+    private float currentTargetOffset;
 
     [Header("Animation (th13 Slide)")]
     private float t_count = 0;
@@ -38,14 +44,13 @@ public class BossTimerUI : MonoBehaviour
         mainCamera = Camera.main;
         canvasGroup.alpha = 0f;
         originalScale = rectTransform.localScale;
-        currentTargetOffset = normalTopOffset; // 初期値
+        currentTargetOffset = normalTopOffset;
 
         rectTransform.anchorMin = new Vector2(0.5f, 1f);
         rectTransform.anchorMax = new Vector2(0.5f, 1f);
         rectTransform.pivot = new Vector2(0.5f, 0.5f);
     }
 
-    // --- 外部（EnemyStatus）からフェーズの種類を教えてもらう ---
     public void SetPhaseType(PhaseType type)
     {
         if (type == PhaseType.SpellCard || type == PhaseType.Endurance)
@@ -56,7 +61,6 @@ public class BossTimerUI : MonoBehaviour
 
     void Update()
     {
-        // ターゲットが完全にいなくなった時（ボス撃破時）のみ消える
         if (targetStatus == null)
         {
             canvasGroup.alpha = Mathf.MoveTowards(canvasGroup.alpha, 0f, Time.deltaTime * 2f);
@@ -65,39 +69,50 @@ public class BossTimerUI : MonoBehaviour
             return;
         }
 
-        // --- 修正ポイント：移行中（値が一時的に0）でも、ターゲットがいれば消さない ---
-        // 初回出現時のみ、フェードインを開始する
         if (canvasGroup.alpha < 1f && targetStatus.currentTimer > 0f)
         {
             canvasGroup.alpha = Mathf.MoveTowards(canvasGroup.alpha, 1f, Time.deltaTime * 3f);
         }
 
-        // 座標計算
         Vector3 worldPos = new Vector3(worldCenterX, 0, 0);
         Vector3 screenPos = mainCamera.WorldToScreenPoint(worldPos);
         float uiPosX = screenPos.x - (Screen.width / 2f);
 
-        // 1. 出現アニメーション
         if (t_count < 90f) t_count += Time.deltaTime * 120f;
         float py = -40f * Mathf.Sin(t_count * Mathf.Deg2Rad) + 40f;
 
-        // --- 修正ポイント：currentTargetOffset に向かって滑らかに移動させる ---
         float smoothedOffset = Mathf.Lerp(rectTransform.anchoredPosition.y, -currentTargetOffset + py, Time.deltaTime * 3f);
         rectTransform.anchoredPosition = new Vector2(uiPosX, smoothedOffset);
-        // 2. UIの更新
+
         UpdateUI(targetStatus.currentTimer);
 
-        // 3. 10秒以下の特殊演出
+        // --- 復活：10秒以下の特殊演出（Pop & SE） ---
         int currentIntSecond = Mathf.FloorToInt(targetStatus.currentTimer);
+        // 秒数が切り替わった瞬間だけ実行
         if (targetStatus.currentTimer <= 10.5f && currentIntSecond != lastIntSecond && targetStatus.currentTimer > 0)
         {
             if (currentIntSecond < 10)
             {
                 StartCoroutine(PopRoutine());
-                // SE再生（省略）
+                // SE再生処理を呼び出し
+                PlayCountSE(currentIntSecond);
             }
             lastIntSecond = currentIntSecond;
         }
+    }
+
+    // --- 追加：SE再生メソッド ---
+    void PlayCountSE(int sec)
+    {
+        // SEManager 自体が AudioSource を管理するため、このクラスに AudioSource は不要です。
+        // そのため、↓の 1行を削除してください。
+        // if (audioSource == null) return; 
+
+        // 4秒以下で音が変わる仕様
+        string clipPath = (sec > 4) ? SEPath.TIMER1 : SEPath.TIMER2;
+
+        // 直接 SEManager を呼び出す
+        SEManager.Instance.Play(clipPath, 0.5f);
     }
 
     IEnumerator PopRoutine()
@@ -114,6 +129,7 @@ public class BossTimerUI : MonoBehaviour
         }
         rectTransform.localScale = originalScale;
     }
+
     void UpdateUI(float time)
     {
         if (time > 99f) time = 99.99f;

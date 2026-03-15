@@ -8,11 +8,11 @@ public abstract class BossPatternBase : MonoBehaviour
 
     // 画面左側（戦場）の中心座標
     protected readonly float CENTER_X = -2.0f;
-    protected readonly float CENTER_Y = 3.0f;
+    protected readonly float CENTER_Y = 0.0f;
 
     // 移動可能範囲（CENTER_X を基準に設定）
-    protected Vector2 moveAreaMin = new Vector2(-5.5f, 1.0f);
-    protected Vector2 moveAreaMax = new Vector2(1.5f, 4.5f);
+    protected Vector2 moveAreaMin = new Vector2(-4.5f, 1.5f);
+    protected Vector2 moveAreaMax = new Vector2(0.5f, 3.5f);
 
     protected virtual void Awake()
     {
@@ -30,39 +30,51 @@ public abstract class BossPatternBase : MonoBehaviour
     }
 
     // --- 旧 BossController から移植：減速移動 ---
-    public IEnumerator SetMovePosition03(float tx, float ty, float weight, float maxSpeed)
+    // --- BossPatternBase.cs ---
+
+    public IEnumerator SetMovePosition03(float tx, float ty, float weight)
     {
         if (controller != null) controller.SetMoving(true);
 
-        Vector3 target = new Vector3(tx, ty, 0);
-        float distance = Vector3.Distance(transform.parent.position, target);
+        Vector3 startPos = transform.parent.position;
+        Vector3 targetPos = new Vector3(tx, ty, 0);
 
-        while (distance > 0.01f)
+        float duration = Mathf.Max(0.01f, weight / 60.0f);
+        float elapsed = 0f;
+
+        while (elapsed < duration)
         {
-            Vector3 diff = target - transform.parent.position;
-            // 物理的に一定のステップで移動 (1/60秒固定)
-            float moveSpeed = Mathf.Min(maxSpeed, diff.magnitude / Mathf.Max(0.1f, weight / 60f));
-            transform.parent.position += diff.normalized * moveSpeed * Time.deltaTime;
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+
+            // --- 修正ポイント：イージング（Sin関数）の適用 ---
+            // これを入れることで、移動の終わりにかけて滑らかに減速します。
+            // (Sine Out と呼ばれる、東方Project等の弾幕STGでよく使われる手法です)
+            t = Mathf.Sin(t * Mathf.PI * 0.5f);
+
+            // 補間された t を使って座標を移動
+            transform.parent.position = Vector3.Lerp(startPos, targetPos, t);
 
             yield return null;
-            distance = Vector3.Distance(transform.parent.position, target);
         }
-        transform.parent.position = target;
 
+        transform.parent.position = targetPos;
         if (controller != null) controller.SetMoving(false);
     }
-
-    // --- 旧 BossController から移植：ランダム移動先計算 ---
-    public IEnumerator SetMovePositionRand03(float minX, float maxX, float minY, float maxY, float weight, float maxSpeed)
+    public IEnumerator SetMovePositionRand03(float minX, float maxX, float minY, float maxY, float weight)
     {
         Vector3 currentPos = transform.parent.position;
         float targetX, targetY;
 
-        // Y軸の移動
+        // --- 修正ポイント：Y軸の移動ロジック ---
+        // 移動量（moveY）を先に決め、現在の高さが移動可能範囲の中央より上か下かで、進む方向を強制的に変えます
         float moveY = Random.Range(minY, maxY);
-        targetY = (Random.value > 0.5f) ? currentPos.y + moveY : currentPos.y - moveY;
+        float centerY = (moveAreaMin.y + moveAreaMax.y) * 0.5f;
 
-        // X軸の移動（プレイヤーの位置を考慮）
+        // 中央より高い位置にいれば「下」へ、低い位置にいれば「上」へ動かす
+        targetY = (currentPos.y > centerY) ? currentPos.y - moveY : currentPos.y + moveY;
+
+        // X軸の移動（自機の位置を見て、近づく方向に移動）
         if (PlayerMove.Instance != null)
         {
             float playerX = PlayerMove.Instance.transform.position.x;
@@ -74,10 +86,10 @@ public abstract class BossPatternBase : MonoBehaviour
             targetX = currentPos.x + Random.Range(-maxX, maxX);
         }
 
-        // 範囲内にクランプ
+        // 3. 上限下限のクランプ（移動可能範囲を越えないようにする）
         targetX = Mathf.Clamp(targetX, moveAreaMin.x, moveAreaMax.x);
         targetY = Mathf.Clamp(targetY, moveAreaMin.y, moveAreaMax.y);
 
-        yield return StartCoroutine(SetMovePosition03(targetX, targetY, weight, maxSpeed));
+        yield return StartCoroutine(SetMovePosition03(targetX, targetY, weight));
     }
 }

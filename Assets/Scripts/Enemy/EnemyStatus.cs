@@ -1,3 +1,4 @@
+using KanKikuchi.AudioManager;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -9,17 +10,21 @@ public enum PhaseType { Normal, SpellCard, Endurance }
 [Serializable]
 public struct BossPhaseData
 {
-    public string phaseName;
+    public string phaseName;     // ○符「○○○○」の名前
     public float maxHP;
     public PhaseType type;
     [Range(0f, 1f)] public float defense;
     public GameObject patternPrefab;
     public bool startsNewBar;
 
-    // --- 新規追加 ---
     [Header("Special Settings")]
-    public float timeLimit;           // 制限時間（秒）
-    [Range(0f, 1f)] public float bombDamageCut; // ボムのダメージカット率 (1.0で完全無効)
+    public float timeLimit;
+    [Range(0f, 1f)] public float bombDamageCut;
+    public float invincibleDuration;
+
+    // --- 追加：宣言タイミングの設定 ---
+    [Tooltip("チェックを入れると、移動開始と同時にスペル宣言します。オフなら移動完了後に宣言します。")]
+    public bool declareImmediately;
 }
 
 public class EnemyStatus : MonoBehaviour
@@ -31,12 +36,15 @@ public class EnemyStatus : MonoBehaviour
     [SerializeField] private GameObject bulletClearPrefab;
 
     [Header("UI Settings")]
+    public EnemySpellCardUI enemySpellUI; // インスペクターで SpellCardUI オブジェクトをドラッグ&ドロップ
+    public GameObject enemyMarkerPrefab; // インスペクターでマーカーのプレハブをセット
     public GameObject healthBarPrefab;
     public List<float> phaseThresholds = new List<float>();
 
     // --- 復元：点滅開始のHPしきい値 ---
+    // インスペクターからの固定値入力をなくし、計算用に NonSerialized にします
     [Header("Marker Settings")]
-    public float flickerLifeThreshold = 200f;
+    [NonSerialized] public float flickerLifeThreshold;
 
     [NonSerialized] public float currentHP;
     [NonSerialized] public float maxHP;
@@ -48,6 +56,9 @@ public class EnemyStatus : MonoBehaviour
     [Header("Timer Display")]
     [NonSerialized] public float currentTimer;
     private bool isTimerActive = false;
+    private bool isInvincible = false; // 無敵中かどうかのフラグ
+
+
     void Awake()
     {
         InitializePhase(0);
@@ -63,42 +74,180 @@ public class EnemyStatus : MonoBehaviour
         }
         return count;
     }
+    // --- EnemyStatus.cs の Start メソッドを以下に差し替え ---
     void Start()
     {
-        SpawnHealthBar();
-        // --- 追加：シーン内のタイマーUIを探して自分を登録する ---
-        // BossTimerUI がシーンに1つだけ存在することを前提としています
-        BossTimerUI timerUI = FindObjectOfType<BossTimerUI>();
-        if (timerUI != null)
+        // 1. シーン内の Canvas (BossHealthCanvas) を探す
+        GameObject canvas = GameObject.Find("EnemySpellCanvas");
+        if (canvas != null)
         {
-            timerUI.targetStatus = this;
+            // 2. その Canvas の子から "EnemySpellCardUI" を探す (非アクティブでも OK)
+            // ここでの名前はヒエラルキー上の名前に合わせてください
+            Transform spellUITrans = canvas.transform.Find("EnemySpellUI");
+            if (spellUITrans != null)
+            {
+                enemySpellUI = spellUITrans.GetComponent<EnemySpellCardUI>();
+            }
         }
-        // --- 追加：ライフカウントUIに自分を登録 ---
-        if (BossLifeCountUI.Instance != null) BossLifeCountUI.Instance.SetTarget(this);
+
+        SpawnHealthBar(); //
+        SpawnMarker(); //
+
+        // タイマーUIへの登録
+        if (BossTimerUI.Instance != null)
+        {
+            BossTimerUI.Instance.targetStatus = this;
+        }
+
+        if (BossLifeCountUI.Instance != null)
+        {
+            BossLifeCountUI.Instance.Initialize(this);
+        }
     }
+
+    // --- EnemyStatus.cs ---
 
     void InitializePhase(int index)
     {
         if (index >= phases.Count) return;
 
         currentPhaseIndex = index;
+        // --- 修正点1：先に maxHP を更新してから 2割 を計算する ---
         maxHP = phases[index].maxHP;
         currentHP = maxHP;
+        flickerLifeThreshold = maxHP * 0.2f;
+
         currentTimer = phases[index].timeLimit;
         isTimerActive = currentTimer > 0;
 
-        // --- 修正ポイント：タイマーにフェーズの種類を伝える ---
         if (BossTimerUI.Instance != null)
         {
             BossTimerUI.Instance.SetPhaseType(phases[index].type);
         }
-
+        // --- 修正ポイント：無敵コルーチンを開始 ---
+        if (phases[index].invincibleDuration > 0)
+        {
+            StartCoroutine(InvincibilityRoutine(phases[index].invincibleDuration));
+        }
+        else
+        {
+            isInvincible = false;
+        }
         if (currentPatternObj != null) Destroy(currentPatternObj);
         if (phases[index].patternPrefab != null)
         {
             currentPatternObj = Instantiate(phases[index].patternPrefab, transform.position, Quaternion.identity, transform);
         }
+        // --- スペルカード演出のトリガー ---
+        if (EnemySpellCardUI.Instance != null)
+        {
+            if (phases[index].type == PhaseType.SpellCard)
+            {
+                // インスペクターで設定した phaseName を渡す
+                // get/challengeCount は今は仮で 0 を入れています
+                EnemySpellCardUI.Instance.DisplaySpell(phases[index].phaseName, 0, 0);
+            }
+            else
+            {
+                // 通常フェーズ（Normal）になったら右へはけさせる
+                EnemySpellCardUI.Instance.HideSpell();
+            }
+        }
+
+
     }
+
+    private void SpawnMarker()
+    {
+        // ライフバーと同じCanvasを取得して生成
+        GameObject canvas = GameObject.Find("MarkerCanvas");
+        if (canvas != null && enemyMarkerPrefab != null)
+        {
+            GameObject markerObj = Instantiate(enemyMarkerPrefab, canvas.transform);
+            // 生成したマーカーに「自分」を追跡対象として教える
+            markerObj.GetComponent<EnemyMarker>().SetTarget(this);
+        }
+    }
+
+    // 無敵時間をカウントするコルーチン
+    private IEnumerator InvincibilityRoutine(float duration)
+    {
+        isInvincible = true;
+        yield return new WaitForSeconds(duration);
+        isInvincible = false;
+    }
+    // --- 修正版：フェーズ移行シーケンス ---
+    IEnumerator PhaseTransitionSequence()
+    {
+        isTransitioning = true;
+        // --- 修正ポイント：撃破した瞬間にスペル UI を引っ込める ---
+        // 現在終了したフェーズがスペルカードだった場合、即座に退避アニメーションを開始する
+        if (enemySpellUI != null && phases[currentPhaseIndex].type == PhaseType.SpellCard)
+        {
+            enemySpellUI.HideSpell();
+        }
+
+        if (currentPatternObj != null) Destroy(currentPatternObj);
+
+        // 1. 弾幕クリア演出
+        if (bulletClearPrefab != null)
+        {
+            GameObject effector = Instantiate(bulletClearPrefab, transform.position, Quaternion.identity);
+            effector.GetComponent<BulletClearEffect>()?.StartClearing(transform.position);
+        }
+
+        int nextIndex = currentPhaseIndex + 1;
+        bool hasNextPhase = nextIndex < phases.Count;
+
+        if (hasNextPhase)
+        {
+            // 次のフェーズの準備
+            if (phases[nextIndex].startsNewBar && currentUI != null) Destroy(currentUI.gameObject);
+
+            currentPhaseIndex = nextIndex;
+            maxHP = phases[currentPhaseIndex].maxHP;
+            currentHP = maxHP;
+            flickerLifeThreshold = maxHP * 0.2f;
+
+            // --- 修正ポイント：即時宣言の設定を確認 ---
+            if (phases[currentPhaseIndex].declareImmediately)
+            {
+                // 移動開始と同時に UI を更新（名前表示 ＆ タイマー移動開始）
+                TriggerSpellDeclaration(currentPhaseIndex);
+            }
+        }
+        else if (currentUI != null) Destroy(currentUI.gameObject);
+
+        // 2. 中央へ移動
+        BossController ctrl = GetComponent<BossController>();
+        if (ctrl != null) ctrl.SetMoving(true);
+        Vector3 target = new Vector3(-2.0f, 2.0f, 0);
+        while (Vector3.Distance(transform.position, target) > 0.05f)
+        {
+            transform.position = Vector3.MoveTowards(transform.position, target, 3f * Time.deltaTime);
+            yield return null;
+        }
+        if (ctrl != null) ctrl.SetMoving(false);
+
+        yield return new WaitForSeconds(0.5f);
+
+        if (hasNextPhase)
+        {
+            // --- 修正ポイント：即時宣言でなかった場合は、ここで宣言 ---
+            if (!phases[currentPhaseIndex].declareImmediately)
+            {
+                TriggerSpellDeclaration(currentPhaseIndex);
+            }
+
+            // 実際の攻撃パターンとタイマー（カウントダウン）を開始
+            InitializePhaseLogic(currentPhaseIndex);
+
+            if (phases[currentPhaseIndex].startsNewBar) SpawnHealthBar();
+            isTransitioning = false;
+        }
+        else Die();
+    }
+
     void Update()
     {
         // タイマーのカウントダウン
@@ -121,15 +270,37 @@ public class EnemyStatus : MonoBehaviour
     // 1. 弾(SendMessage)から呼ばれる、引数1つのバージョン
     public void TakeDamage(float damage)
     {
+
+        if (isTransitioning || currentHP <= 0 || isInvincible) return;
+
+        if (currentHP > flickerLifeThreshold)
+        {
+            SEManager.Instance.Play(SEPath.SE_DAMAGE00,0.5f);
+        }
+        else
+        {
+            SEManager.Instance.Play(SEPath.SE_DAMAGE01, 0.5f);
+        }
         // 内部的に引数2つのバージョンを「ボムではない(false)」として呼び出す
         TakeDamage(damage, false);
+
+
+
+
     }
 
     // 2. ボムや特殊攻撃から呼ばれる、引数2つのバージョン
     public void TakeDamage(float damage, bool isBomb)
     {
-        if (isTransitioning || currentHP <= 0) return;
-
+        if (isTransitioning || currentHP <= 0 || isInvincible) return;
+        if (currentHP > flickerLifeThreshold)
+        {
+            SEManager.Instance.Play(SEPath.SE_DAMAGE00, 0.5f);
+        }
+        else
+        {
+            SEManager.Instance.Play(SEPath.SE_DAMAGE01, 0.5f);
+        }
         float finalDamage = damage;
         float def = phases[currentPhaseIndex].defense;
 
@@ -216,64 +387,7 @@ public class EnemyStatus : MonoBehaviour
         }
         return thresholds;
     }
-    IEnumerator PhaseTransitionSequence()
-    {
-        isTransitioning = true;
-        if (currentPatternObj != null) Destroy(currentPatternObj);
-
-        // 1. 弾幕クリア演出
-        if (bulletClearPrefab != null)
-        {
-            GameObject effector = Instantiate(bulletClearPrefab, transform.position, Quaternion.identity);
-            effector.GetComponent<BulletClearEffect>()?.StartClearing(transform.position);
-        }
-
-        // --- 追加：次のフェーズの型を先に確認し、タイマーの位置移動を開始させる ---
-        int nextIndex = currentPhaseIndex + 1;
-        if (nextIndex < phases.Count && BossTimerUI.Instance != null)
-        {
-            // ボスが動き出すのと同時にタイマーの移動フラグを送る
-            BossTimerUI.Instance.SetPhaseType(phases[nextIndex].type);
-        }
-
-        // 2. 中央へ移動 (-2.0, 2.0)
-        BossController ctrl = GetComponent<BossController>();
-        if (ctrl != null) ctrl.SetMoving(true);
-
-        Vector3 target = new Vector3(-2.0f, 2.0f, 0);
-        while (Vector3.Distance(transform.position, target) > 0.05f)
-        {
-            // ボスが徐々に中央へ向かう
-            transform.position = Vector3.MoveTowards(transform.position, target, 3f * Time.deltaTime);
-            yield return null;
-        }
-        if (ctrl != null) ctrl.SetMoving(false);
-
-        yield return new WaitForSeconds(0.5f);
-
-        // 3. 次のフェーズ判定
-        if (nextIndex < phases.Count)
-        {
-            currentPhaseIndex = nextIndex;
-
-            if (phases[currentPhaseIndex].startsNewBar)
-            {
-                if (currentUI != null) Destroy(currentUI.gameObject);
-                InitializePhase(currentPhaseIndex);
-                SpawnHealthBar();
-            }
-            else
-            {
-                InitializePhase(currentPhaseIndex);
-            }
-            isTransitioning = false;
-        }
-        else
-        {
-            if (currentUI != null) Destroy(currentUI.gameObject);
-            Die();
-        }
-    }
+   
     private void SpawnHealthBar()
     {
         GameObject canvas = GameObject.Find("BossHealthCanvas");
@@ -293,4 +407,43 @@ public class EnemyStatus : MonoBehaviour
     {
         Destroy(gameObject);
     }
+    // スペル名表示やタイマー位置の「見た目」の更新
+    private void TriggerSpellDeclaration(int index)
+    {
+        // タイマーのタイプ（位置）を同期
+        if (BossTimerUI.Instance != null)
+        {
+            BossTimerUI.Instance.SetPhaseType(phases[index].type);
+        }
+
+        // --- 修正：Instance ではなく直接参照(enemySpellUI)を使用 ---
+        if (enemySpellUI != null)
+        {
+            if (phases[index].type == PhaseType.SpellCard)
+            {
+                // インスペクターの phaseName を使用して宣言
+                enemySpellUI.DisplaySpell(phases[index].phaseName, 0, 0);
+            }
+            else
+            {
+                enemySpellUI.HideSpell();
+            }
+        }
+    }
+
+    // 実際の攻撃やタイマーの「動作」の更新
+    private void InitializePhaseLogic(int index)
+    {
+        currentTimer = phases[index].timeLimit;
+        isTimerActive = currentTimer > 0;
+
+        if (phases[index].invincibleDuration > 0)
+            StartCoroutine(InvincibilityRoutine(phases[index].invincibleDuration));
+        else
+            isInvincible = false;
+
+        if (phases[index].patternPrefab != null)
+            currentPatternObj = Instantiate(phases[index].patternPrefab, transform.position, Quaternion.identity, transform);
+    }
+
 }

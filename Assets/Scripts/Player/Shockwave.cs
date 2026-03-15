@@ -5,7 +5,7 @@ public class Shockwave : MonoBehaviour
     private SpriteRenderer sr;
     private CircleCollider2D col;
     private float expandSpeed;
-    private int damage = 120; // 衝撃波のダメージ
+    private int damage = 20; // 衝撃波のダメージ
 
     [Header("Screen Shake Settings")]
     [SerializeField] private float shakeDuration = 0.2f;
@@ -50,13 +50,21 @@ public class Shockwave : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
+        // 何かに当たったこと自体を確認
+        Debug.Log("衝撃波が何かに接触: " + collision.gameObject.name);
+
         if (collision.CompareTag("EnemyBullet"))
         {
+            Debug.Log("弾のタグを検知！");
             EnemyBullet bullet = collision.GetComponent<EnemyBullet>();
-            if (bullet != null) bullet.Deactivate(true);
+            if (bullet != null)
+            {
+                Debug.Log("弾の消滅処理を実行します");
+                bullet.Deactivate(true); //
+            }
         }
 
         EnemyStatus enemy = collision.GetComponent<EnemyStatus>();
-        if (enemy != null) enemy.TakeDamage(damage, true);
+        if (enemy != null) enemy.TakeDamage(damage, true); //
     }
 }

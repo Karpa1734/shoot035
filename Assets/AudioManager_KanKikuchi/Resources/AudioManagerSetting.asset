@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _isAutoUpdateAudioPath: 1
   _bgmAudioPlayerNum: 3
-  _seAudioPlayerNum: 10
+  _seAudioPlayerNum: 150
   _bgmBaseVolume: 1
   _seBaseVolume: 1
   _shouldAdjustSEVolumeRate: 1

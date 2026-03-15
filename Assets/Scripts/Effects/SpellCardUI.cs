@@ -13,6 +13,8 @@ public class SpellCardUI : MonoBehaviour
     private float remainingTime;
     private bool isCounting = false;
 
+    private readonly string cyanColorTag = "<color=#00FFFF>";
+    private readonly string colorEndTag = "</color>";
     // 座標設定（Canvasの解像度に合わせてインスペクターで調整してください）
     [Header("Position Settings")]
     public Vector2 centerLeftPos = new Vector2(-400, 0);
@@ -36,7 +38,7 @@ public class SpellCardUI : MonoBehaviour
             if (remainingTime < 0) remainingTime = 0;
 
             // image_96b826.png の形式を再現
-            timerText.text = $"Spell Time  {remainingTime:F2} [s]";
+            timerText.text = $"{cyanColorTag}Spell Time{colorEndTag}  {remainingTime:F2} [s]";
         }
     }
 

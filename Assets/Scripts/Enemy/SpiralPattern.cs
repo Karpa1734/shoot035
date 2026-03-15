@@ -1,3 +1,4 @@
+using KanKikuchi.AudioManager;
 using UnityEngine;
 
 public class SpiralPattern : MonoBehaviour
@@ -28,6 +29,7 @@ public class SpiralPattern : MonoBehaviour
 
     void FireSpiral()
     {
+        SEManager.Instance.Play(SEPath.SHOT1, 0.5f);
         for (int i = 0; i < wayCount; i++)
         {
             float currentAngle = angle + (i * 360f / wayCount);

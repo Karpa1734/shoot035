@@ -1,6 +1,7 @@
-﻿using UnityEngine;
+﻿using KanKikuchi.AudioManager;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine;
 
 public class SealOrb : MonoBehaviour
 {
@@ -196,6 +197,7 @@ public class SealOrb : MonoBehaviour
         if (isExploded) return;
         isExploded = true;
 
+        SEManager.Instance.Play(SEPath.SHOT1);
         // 衝撃波の生成
         if (impactShockwavePrefab != null)
         {

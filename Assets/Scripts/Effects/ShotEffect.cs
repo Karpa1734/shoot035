@@ -1,5 +1,6 @@
-using UnityEngine;
+using KanKikuchi.AudioManager;
 using System.Collections;
+using UnityEngine;
 
 public class ShotEffect : MonoBehaviour
 {
@@ -38,9 +39,10 @@ public class ShotEffect : MonoBehaviour
     {
         if (sr == null) sr = GetComponent<SpriteRenderer>();
 
+        SEManager.Instance.Play(SEPath.BULLETBREAK, 0.5f);
         // yC³z‘å‚«‚³‚ğ1.5”{‚Éİ’è
         sr.color = bulletColor;
-        transform.localScale = Vector3.one * scale * 1.5f;
+        transform.localScale = Vector3.one * scale * 2.0f;
 
         // yC³zƒAƒjƒ[ƒVƒ‡ƒ“‘¬“x‚ğ2”{’x‚­i‘S‘ÌƒtƒŒ[ƒ€‚ğ2”{‚Éj
         // 0.03f ¨ 0.06f ‚É•ÏX

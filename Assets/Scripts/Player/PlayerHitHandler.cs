@@ -1,5 +1,6 @@
-using UnityEngine;
+using KanKikuchi.AudioManager;
 using System.Collections;
+using UnityEngine;
 
 public class PlayerHitHandler : MonoBehaviour
 {
@@ -30,12 +31,26 @@ public class PlayerHitHandler : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        // 無敵中、またはすでに被弾（猶予中含む）処理中なら完全に無視する
+        // 1. 敵弾に触れた場合、無敵状態に関わらず弾を消去する
+        if (collision.CompareTag("EnemyBullet"))
+        {
+            EnemyBullet bullet = collision.GetComponent<EnemyBullet>();
+            if (bullet != null)
+            {
+                // 弾をプールに戻す、または破壊する処理（消滅エフェクトあり）
+                bullet.Deactivate(true);
+            }
+        }
+
+        // 2. ミス（被弾）判定を行うかどうかのガード
+        // 無敵中、またはすでに被弾処理（猶予中含む）中なら、ここから先のミス処理は行わない
         if (playerMove.IsInvincible || currentState != PlayerState.Normal) return;
 
+        // 3. ミス（被弾）の開始判定
+        // 敵弾、または敵本体（ボス）に接触した場合
         if (collision.CompareTag("EnemyBullet") || collision.CompareTag("Enemy"))
         {
-            // 当たった瞬間に状態を「被弾猶予中」に変え、多重起動を防ぐ
+            // 当たった瞬間に状態を「被弾猶予中」に変え、食らいボム判定へ
             currentState = PlayerState.DeathBomb;
             StartCoroutine(CheckDeathBombRoutine());
         }
@@ -43,6 +58,7 @@ public class PlayerHitHandler : MonoBehaviour
 
     IEnumerator CheckDeathBombRoutine()
     {
+        SEManager.Instance.Play(SEPath.SE_PLAYER_COLLISION,0.3f);
         // 食らいボム猶予時間を開始
         playerMove.StartDeathBombWindow(deathBombWindow);
 

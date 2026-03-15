@@ -49,3 +49,9 @@ MonoBehaviour:
   spreadAngle: 30
   bulletSpeed: 4
   fireInterval: 1.5
+  moveMinX: 0.5
+  moveMaxX: 1.5
+  moveMinY: 0.2
+  moveMaxY: 0.8
+  moveWeight: 60
+  moveMaxSpeed: 2

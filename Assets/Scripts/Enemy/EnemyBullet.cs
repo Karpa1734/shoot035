@@ -165,10 +165,14 @@ public class EnemyBullet : MonoBehaviour
         isInitialized = false;
         isFiring = false;
 
-        // オブジェクトプールへ返却
-        if (BulletPool.Instance != null)
+        if (BulletPool.Instance != null && originPrefab != null)
+        {
+            // 自分のコピー元(originPrefab)を指定してプールに戻す
             BulletPool.Instance.Release(originPrefab, gameObject);
+        }
         else
-            Destroy(gameObject);
+        {
+            Destroy(gameObject); // プールがない、またはプレハブ指定がない場合は破壊
+        }
     }
 }
