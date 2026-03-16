@@ -131,10 +131,10 @@ MonoBehaviour:
   markerParent: {fileID: 8236089031124372235}
   markerPrefab: {fileID: 7122933815036877232, guid: 063281b033cd3a04bbb235f247b6d126, type: 3}
   canvasGroup: {fileID: 298562985608766737}
-  radius: 193
+  radius: 194
   offset: {x: 0, y: 0, z: 0}
   appearDuration: 1
-  markerScale: {x: 0.6, y: 0.6, z: 1}
+  markerScale: {x: 0.4, y: 0.4, z: 1}
 --- !u!225 &298562985608766737
 CanvasGroup:
   m_ObjectHideFlags: 0

@@ -14,6 +14,11 @@ public abstract class BossPatternBase : MonoBehaviour
     protected Vector2 moveAreaMin = new Vector2(-4.5f, 1.5f);
     protected Vector2 moveAreaMax = new Vector2(0.5f, 3.5f);
 
+    // 復帰用に元の値を保持する変数
+    private float originalShotRate;
+    private float originalBombRate;
+    private Collider2D parentCollider;
+    private SpriteRenderer bossRenderer;
     protected virtual void Awake()
     {
         controller = GetComponentInParent<BossController>();
@@ -91,5 +96,73 @@ public abstract class BossPatternBase : MonoBehaviour
         targetY = Mathf.Clamp(targetY, moveAreaMin.y, moveAreaMax.y);
 
         yield return StartCoroutine(SetMovePosition03(targetX, targetY, weight));
+    }
+
+    /// <summary>
+    /// ステルス状態（透明化＋当たり判定消失）に移行する
+    /// </summary>
+    /// <param name="fadeDuration">透明化にかかる時間</param>
+    /// <param name="targetAlpha">最終的な透明度 (0で完全に消える)</param>
+    protected IEnumerator FadeToStealth(float fadeDuration, float targetAlpha = 0f)
+    {
+        if (status == null) yield break;
+
+        // 初回実行時にコンポーネント等を取得
+        if (parentCollider == null) parentCollider = GetComponentInParent<Collider2D>();
+        if (bossRenderer == null) bossRenderer = transform.parent.GetComponentInChildren<SpriteRenderer>();
+
+        // 1. 当たり判定（ショット・ボム・自機衝突）を完全に消す
+        if (parentCollider != null) parentCollider.enabled = false;
+
+        // 2. ショットが当たった際の音などを出さないよう、ダメージレートを0にする
+        // (※現在のフェーズのレートを一時的に書き換える)
+        // originalShotRate = status.phases[status.currentPhaseIndex].shotDamageRate; // 構造体の場合は直接書き換えに注意が必要なため、以下のロジックが安全です
+
+        // 3. 透明化アニメーション
+        if (bossRenderer != null)
+        {
+            float elapsed = 0f;
+            Color startColor = bossRenderer.color;
+            while (elapsed < fadeDuration)
+            {
+                elapsed += Time.deltaTime;
+                float a = Mathf.Lerp(startColor.a, targetAlpha, elapsed / fadeDuration);
+                bossRenderer.color = new Color(startColor.r, startColor.g, startColor.b, a);
+                yield return null;
+            }
+        }
+    }
+
+    /// <summary>
+    /// ステルス状態から復帰する
+    /// </summary>
+    protected IEnumerator FadeToVisible(float fadeDuration)
+    {
+        if (bossRenderer != null)
+        {
+            float elapsed = 0f;
+            Color startColor = bossRenderer.color;
+            while (elapsed < fadeDuration)
+            {
+                elapsed += Time.deltaTime;
+                float a = Mathf.Lerp(startColor.a, 1f, elapsed / fadeDuration);
+                bossRenderer.color = new Color(startColor.r, startColor.g, startColor.b, a);
+                yield return null;
+            }
+        }
+
+        // 当たり判定を戻す
+        if (parentCollider != null) parentCollider.enabled = true;
+    }
+
+    // パターンオブジェクトが破棄（フェーズ終了）されるときに自動で復帰させる
+    protected virtual void OnDestroy()
+    {
+        // 強制的に元の状態に戻す
+        if (parentCollider != null) parentCollider.enabled = true;
+        if (bossRenderer != null)
+        {
+            bossRenderer.color = new Color(bossRenderer.color.r, bossRenderer.color.g, bossRenderer.color.b, 1f);
+        }
     }
 }

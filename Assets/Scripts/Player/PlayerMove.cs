@@ -26,6 +26,8 @@ public class PlayerMove : MonoBehaviour
 
     void Awake()
     {
+        Time.timeScale = 1f;
+        //Application.targetFrameRate = 60;
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
     }

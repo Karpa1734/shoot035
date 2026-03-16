@@ -151,47 +151,55 @@ MonoBehaviour:
   - phaseName: NonSpell1
     maxHP: 1000
     type: 0
-    defense: 0.6
+    shotDamageRate: 100
+    bombDamageRate: 100
     patternPrefab: {fileID: 1781038096083142761, guid: 238c22b2267671d49aaf857f60461da9, type: 3}
     startsNewBar: 1
     timeLimit: 30
-    bombDamageCut: 0
+    spellBonus: 0
     invincibleDuration: 3
+    hideHealthBar: 0
     declareImmediately: 0
   - phaseName: "\u58F1\u7B26\u300C\u5F3E\u5E55\uFF11\u300D"
-    maxHP: 300
-    type: 1
-    defense: 0.9
-    patternPrefab: {fileID: 7081024686200239551, guid: f4aace932eaf48f4da53aa38f2089b06, type: 3}
+    maxHP: 1
+    type: 2
+    shotDamageRate: 0
+    bombDamageRate: 0
+    patternPrefab: {fileID: 7081024686200239551, guid: fafe14ecd4a7f3044a6fdef3f6044652, type: 3}
     startsNewBar: 0
-    timeLimit: 35
-    bombDamageCut: 0
+    timeLimit: 15
+    spellBonus: 1000000
     invincibleDuration: 3
+    hideHealthBar: 1
     declareImmediately: 1
   - phaseName: NonSpell2
     maxHP: 1000
     type: 0
-    defense: 0.6
+    shotDamageRate: 100
+    bombDamageRate: 100
     patternPrefab: {fileID: 1781038096083142761, guid: 238c22b2267671d49aaf857f60461da9, type: 3}
     startsNewBar: 1
     timeLimit: 30
-    bombDamageCut: 0
+    spellBonus: 0
     invincibleDuration: 3
+    hideHealthBar: 0
     declareImmediately: 0
   - phaseName: "\u5F10\u7B26\u300C\u5F3E\u5E55\uFF12\u300D"
     maxHP: 300
     type: 1
-    defense: 0.9
+    shotDamageRate: 30
+    bombDamageRate: 30
     patternPrefab: {fileID: 7081024686200239551, guid: f4aace932eaf48f4da53aa38f2089b06, type: 3}
     startsNewBar: 0
     timeLimit: 35
-    bombDamageCut: 0
+    spellBonus: 1000000
     invincibleDuration: 3
+    hideHealthBar: 0
     declareImmediately: 1
   bulletClearPrefab: {fileID: 6575740104421894055, guid: f24413bf391b54e41a2768d690b51a76, type: 3}
+  enemySpellUI: {fileID: 0}
   enemyMarkerPrefab: {fileID: 5725931542754004518, guid: f23a64b249779594c88afb4817d4c845, type: 3}
   healthBarPrefab: {fileID: 2193791860109990607, guid: 86e7816db63040945a85fb4892729128, type: 3}
-  phaseThresholds: []
 --- !u!1 &9062793464921393976
 GameObject:
   m_ObjectHideFlags: 0

@@ -18,7 +18,7 @@ public class EnemyBullet : MonoBehaviour
 
     private int delayFrameCount = 0;
     private int currentSortingOrder;
-
+    private bool isGrazed = false;
     void Awake()
     {
         sr = GetComponent<SpriteRenderer>();
@@ -174,5 +174,18 @@ public class EnemyBullet : MonoBehaviour
         {
             Destroy(gameObject); // プールがない、またはプレハブ指定がない場合は破壊
         }
+    }
+
+    public bool TryGraze()
+    {
+        if (isGrazed) return false;
+        isGrazed = true;
+        return true;
+    }
+
+    // 弾がプールに戻る（消える）際にフラグをリセットするようにしてください
+    public void OnDisable()
+    {
+        isGrazed = false;
     }
 }

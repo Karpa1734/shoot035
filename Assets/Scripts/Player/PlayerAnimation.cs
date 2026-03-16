@@ -13,6 +13,7 @@ public class PlayerAnimation : MonoBehaviour
 
     void Update()
     {
+        if (Time.timeScale <= 0) return;
         // --- 1. “ü—Íó‘Ô‚Æs(RectY)‚ÌŒˆ’è ---
         int rowOffset = 0;
 

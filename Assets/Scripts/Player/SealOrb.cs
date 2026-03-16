@@ -53,6 +53,7 @@ public class SealOrb : MonoBehaviour
         int orbitFrames = BASE_ORBIT_FRAMES + (homingOrder * HOMING_INTERVAL);
         for (int i = 0; i < orbitFrames; i++)
         {
+            while (Time.timeScale <= 0) yield return null;
             if (isExploded) yield break;
 
             Vector3 posBefore = transform.position;
@@ -73,6 +74,7 @@ public class SealOrb : MonoBehaviour
 
         while (trackTimer < maxTrackTime)
         {
+            while (Time.timeScale <= 0) yield return null;
             if (isExploded) yield break;
 
             target = FindNearestEnemy();
@@ -158,7 +160,7 @@ public class SealOrb : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (isExploded) return;
+        if (Time.timeScale <= 0 || isExploded) return;
 
         // 1. 敵へのダメージ処理
         EnemyStatus enemy = collision.GetComponent<EnemyStatus>();

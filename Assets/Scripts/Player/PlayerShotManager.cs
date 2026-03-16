@@ -23,11 +23,16 @@ public class PlayerShotManager : MonoBehaviour
     void Start()
     {
         optionManager = GetComponent<OptionManager>();
-        // 同じオブジェクトにある PlayerHitHandler を取得
-        hitHandler = GetComponent<PlayerHitHandler>();
+
+        // --- 修正：GetComponent ではなく GetComponentInChildren を使う ---
+        hitHandler = GetComponentInChildren<PlayerHitHandler>();
+
+        // デバッグ用：見つからなかったらエラーを出す
+        if (hitHandler == null) Debug.LogError("PlayerHitHandler が子オブジェクトに見つかりません！");
     }
     void Update()
     {
+        if (Time.timeScale <= 0) return;
         if (hitHandler == null || hitHandler.currentState != PlayerHitHandler.PlayerState.Normal)
         {
             mainTimer = 0;

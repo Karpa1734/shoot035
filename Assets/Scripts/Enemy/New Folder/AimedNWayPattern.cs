@@ -25,29 +25,34 @@ public class AimedNWayPattern : BossPatternBase
 
     private float timer = 0f;
     private bool isMoving = false;
-
+    private Coroutine fireRoutine;
     protected override void Awake()
     {
         base.Awake(); //
     }
-
-    void Update()
+    void OnEnable()
     {
-        if (status == null || bulletData == null) return; //
-
-        timer += Time.deltaTime;
-        if (timer >= fireInterval)
-        {
-            FireAimedNWay();
-            timer = 0f;
-
-            if (!isMoving)
-            {
-                StartCoroutine(MoveRoutine());
-            }
-        }
+        // オブジェクトが有効になったら発射開始
+        if (fireRoutine != null) StopCoroutine(fireRoutine);
+        fireRoutine = StartCoroutine(FireRoutine());
     }
 
+    IEnumerator FireRoutine()
+    {
+        // 最初の待機時間が必要ならここに入れる
+        yield return new WaitForSeconds(0.5f);
+
+        while (true)
+        {
+            FireAimedNWay();
+
+            // 移動処理もリズムに合わせて制御可能
+            if (!isMoving) StartCoroutine(MoveRoutine());
+
+            // 指定した秒数待機
+            yield return new WaitForSeconds(fireInterval);
+        }
+    }
     void FireAimedNWay()
     {
         if (PlayerMove.Instance == null) return; //

@@ -24,6 +24,7 @@ public class SlowEffect : MonoBehaviour
 
     void Update()
     {
+        if (Time.timeScale <= 0) return;
         // Shiftキー（低速移動）が押されているか判定
         bool isSlow = Input.GetKey(KeyCode.LeftShift);
 

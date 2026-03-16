@@ -34,6 +34,7 @@ public class BossAuraManager : MonoBehaviour
     {
         while (true)
         {
+            while (Time.timeScale <= 0) yield return null;
             SpawnAuraParticle(1);
             yield return new WaitForSeconds(6f / 60f); // 6フレーム間隔
         }
@@ -43,6 +44,7 @@ public class BossAuraManager : MonoBehaviour
     {
         while (true)
         {
+            while (Time.timeScale <= 0) yield return null;
             SpawnAuraParticle(2);
             yield return new WaitForSeconds(3f / 60f); // 3フレーム間隔 [cite: 14]
         }
@@ -64,6 +66,7 @@ public class BossAuraManager : MonoBehaviour
         // 2. 出現時の拡大演出 + フェードイン
         for (int i = 0; i < time; i++)
         {
+            while (Time.timeScale <= 0) yield return null;
             // 拡大中もボスが動く可能性があるため、毎フレーム位置を更新 [cite: 32]
             auraObj.transform.position = transform.position;
 
@@ -81,6 +84,7 @@ public class BossAuraManager : MonoBehaviour
         // 3. 維持状態（ボスに追従）
         while (true)
         {
+            while (Time.timeScale <= 0) yield return null;
             // ここで常にボスの位置を追いかける [cite: 32]
             auraObj.transform.position = transform.position;
             sr.color = new Color(auraColor.r, auraColor.g, auraColor.b, targetAlpha);
@@ -112,6 +116,7 @@ public class BossAuraManager : MonoBehaviour
 
         for (int i = 0; i < time; i++)
         {
+            while (Time.timeScale <= 0) yield return null;
             float progress = (i + 1) / time;
             float mY = (21f / time) * (i + 1); // [cite: 23]
             float alpha = Mathf.Sin(progress * Mathf.PI); // [cite: 24]

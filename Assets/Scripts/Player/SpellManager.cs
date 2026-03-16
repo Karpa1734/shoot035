@@ -21,19 +21,27 @@ public class SpellManager : MonoBehaviour
     public EnemyStatus bossStatus;
     private bool isOnSpell = false;
 
+    // --- SpellManager.cs ---
+
     void Update()
     {
+        if (Time.timeScale <= 0) return;
         if (Input.GetKeyDown(KeyCode.X) && !isOnSpell)
         {
-            // 自機のインスタンスから HitHandler を取得
-            PlayerHitHandler hitHandler = PlayerMove.Instance.GetComponent<PlayerHitHandler>();
+            PlayerHitHandler hitHandler = PlayerMove.Instance.GetComponentInChildren<PlayerHitHandler>();
 
             if (hitHandler != null)
             {
-                // 通常時、または食らいボム猶予中のみ発動可能にする
                 if (hitHandler.currentState == PlayerHitHandler.PlayerState.Normal ||
                     hitHandler.currentState == PlayerHitHandler.PlayerState.DeathBomb)
                 {
+                    EnemyStatus boss = FindObjectOfType<EnemyStatus>();
+                    if (boss != null)
+                    {
+                        boss.FailSpell();
+                    }
+
+
                     StartCoroutine(ExecuteFantasySeal());
                 }
             }
@@ -47,7 +55,7 @@ public class SpellManager : MonoBehaviour
 
         SEManager.Instance.Play(SEPath.LASER7,0.5f);
 
-        float invincibilityDuration = 320f / 60f; // 5.33秒
+        float invincibilityDuration = 360f / 60f; // 5.33秒
         if (spellUI != null)
         {
             spellUI.gameObject.SetActive(true); // UIオブジェクト本体をアクティブにする
@@ -57,7 +65,7 @@ public class SpellManager : MonoBehaviour
         if (darkOverlay != null) darkOverlay.SetActive(true);
 
         // 無敵時間を設定（285フレーム相当） [cite: 7]
-        PlayerMove.Instance.SetInvincible(390f / 60f);
+        PlayerMove.Instance.SetInvincible(360f / 60f);
         /*
         if (shockwavePrefab != null)
         {
@@ -87,7 +95,7 @@ public class SpellManager : MonoBehaviour
         }
 
         // スペル持続時間（255フレーム相当）の待機 [cite: 7]
-        yield return new WaitForSeconds(390f / 60f);
+        yield return new WaitForSeconds(360f / 60f);
 
         // --- 追加：背景の暗転を終了 ---
         if (darkOverlay != null) darkOverlay.SetActive(false);

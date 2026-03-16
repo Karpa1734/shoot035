@@ -51,15 +51,15 @@ public class Shockwave : MonoBehaviour
     private void OnTriggerEnter2D(Collider2D collision)
     {
         // 何かに当たったこと自体を確認
-        Debug.Log("衝撃波が何かに接触: " + collision.gameObject.name);
+        //Debug.Log("衝撃波が何かに接触: " + collision.gameObject.name);
 
         if (collision.CompareTag("EnemyBullet"))
         {
-            Debug.Log("弾のタグを検知！");
+            //Debug.Log("弾のタグを検知！");
             EnemyBullet bullet = collision.GetComponent<EnemyBullet>();
             if (bullet != null)
             {
-                Debug.Log("弾の消滅処理を実行します");
+                //Debug.Log("弾の消滅処理を実行します");
                 bullet.Deactivate(true); //
             }
         }

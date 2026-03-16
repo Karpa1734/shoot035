@@ -40,9 +40,21 @@ public class BossCircularHealth : MonoBehaviour
     {
         if (targetEnemy == null || mainCamera == null) return;
 
-        // ワールド座標をスクリーン座標に変換して代入
-        Vector3 screenPos = mainCamera.WorldToScreenPoint(targetEnemy.transform.position + offset);
-        rectTransform.position = screenPos;
+        // 1. ボスのワールド座標にオフセットを足してスクリーン座標に変換
+        Vector2 screenPos = mainCamera.WorldToScreenPoint(targetEnemy.transform.position + offset);
+
+        // 2. Cameraモードの場合、スクリーン座標をキャンバス内のローカル座標に変換する必要がある
+        RectTransform canvasRect = transform.parent as RectTransform; // 親のCanvasのRectを取得
+
+        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            canvasRect,
+            screenPos,
+            GetComponentInParent<Canvas>().worldCamera, // キャンバスに設定されたカメラ
+            out Vector2 localPos))
+        {
+            // 3. ローカル座標を適用
+            rectTransform.anchoredPosition = localPos;
+        }
     }
 
     public void Initialize(EnemyStatus enemy, List<float> thresholds)
@@ -132,19 +144,27 @@ public class BossCircularHealth : MonoBehaviour
             GameObject marker = Instantiate(markerPrefab, markerParent);
             RectTransform markerRect = marker.GetComponent<RectTransform>();
 
-            // 位置計算ロジック
+            // アンカーとピボットを「中心」に固定
             markerRect.anchorMin = new Vector2(0.5f, 0.5f);
-            markerRect.anchorMax = new Vector2(0.5f, 1f); // 上端基準
+            markerRect.anchorMax = new Vector2(0.5f, 0.5f);
+            markerRect.pivot = new Vector2(0.5f, 0.5f);
+
+            // --- 修正ポイント：反時計回り（CCW）の計算に変更 ---
             float angle = threshold * 360f;
-            float rad = (90f + angle) * Mathf.Deg2Rad;
-            float x = Mathf.Cos(rad) * radius;
-            float y = Mathf.Sin(rad) * radius;
+            float rad = angle * Mathf.Deg2Rad;
+
+            // X座標を「-Mathf.Sin」にすることで、上から左方向（反時計回り）へ配置します
+            float x = -Mathf.Sin(rad) * radius;
+            float y = Mathf.Cos(rad) * radius;
 
             markerRect.anchoredPosition = new Vector2(x, y);
+
+            // --- 修正ポイント：ピンの向きも反時計回りに合わせる ---
+            // 符号をプラス（angle）にすることで、反時計回りに回転させます
             markerRect.localRotation = Quaternion.Euler(0, 0, angle);
             markerRect.localScale = markerScale;
 
-            // リストに追加して管理対象にする
+            // 管理リストに追加
             activeMarkers.Add(new MarkerInfo { obj = marker, threshold = threshold });
         }
     }
