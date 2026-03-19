@@ -152,7 +152,8 @@ public class EnemySpellCardUI : MonoBehaviour
 
     // 第5引数に isTimeUp を追加（デフォルトは false）
     public void ShowSpellResult(int bonus, float clearTime, float realTime, bool isSuccess, bool isTimeUp = false)
-    {
+    {// ★ 追加：コルーチンを開始するために、まずオブジェクトをアクティブにする
+        gameObject.SetActive(true);
         if (resultCoroutine != null) StopCoroutine(resultCoroutine);
 
         resultRoot.SetActive(true);

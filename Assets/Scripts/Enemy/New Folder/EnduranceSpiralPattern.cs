@@ -14,17 +14,17 @@ public class EnduranceSpiralPattern : BossPatternBase
     private float angle = 0f;
     private bool isFiring = false;
 
-    // --- 追加：透明化と当たり判定の制御用 ---
-    private Collider2D parentCollider;
-    private SpriteRenderer bossRenderer;
-
         float timer = 0f;
     protected override void Awake()
     {
         base.Awake();
-        // 親（ボス本体）のコンポーネントを取得
-        parentCollider = GetComponentInParent<Collider2D>();
-        bossRenderer = transform.parent.GetComponentInChildren<SpriteRenderer>();
+
+        // --- 追加：親オブジェクト（ボス本体）からコンポーネントを取得する ---
+        if (parentCollider == null)
+            parentCollider = GetComponentInParent<Collider2D>();
+
+        if (bossRenderer == null)
+            bossRenderer = transform.parent.GetComponentInChildren<SpriteRenderer>();
     }
 
     IEnumerator Start()
@@ -90,12 +90,11 @@ public class EnduranceSpiralPattern : BossPatternBase
     }
 
     // パターン終了（フェーズ移行）時に必ず元の状態に戻す
-    private void OnDestroy()
+    protected override void OnDestroy()
     {
-        if (parentCollider != null) parentCollider.enabled = true;
-        if (bossRenderer != null)
-        {
-            bossRenderer.color = new Color(bossRenderer.color.r, bossRenderer.color.g, bossRenderer.color.b, 1f);
-        }
+        // 基底クラスのリセット処理（当たり判定を戻す、色を戻す）を呼び出す
+        base.OnDestroy();
+
+        // 個別のスクリプトで追加したい処理があればここに書く
     }
 }

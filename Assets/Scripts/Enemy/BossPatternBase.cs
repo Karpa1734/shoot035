@@ -17,8 +17,8 @@ public abstract class BossPatternBase : MonoBehaviour
     // •œ‹A—p‚ÉŒ³‚Ì’l‚ğ•Û‚·‚é•Ï”
     private float originalShotRate;
     private float originalBombRate;
-    private Collider2D parentCollider;
-    private SpriteRenderer bossRenderer;
+    protected Collider2D parentCollider;
+    protected SpriteRenderer bossRenderer;
     protected virtual void Awake()
     {
         controller = GetComponentInParent<BossController>();

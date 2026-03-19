@@ -27,22 +27,25 @@ public class SpellManager : MonoBehaviour
     {
         if (Time.timeScale <= 0) return;
         if (Input.GetKeyDown(KeyCode.X) && !isOnSpell)
-        {
-            PlayerHitHandler hitHandler = PlayerMove.Instance.GetComponentInChildren<PlayerHitHandler>();
-
-            if (hitHandler != null)
+        {// èäéùÇµÇƒÇ¢ÇÈèÍçáÇÃÇ›î≠ìÆ
+            if (PlayerStatusManager.Instance.UseSpell())
             {
-                if (hitHandler.currentState == PlayerHitHandler.PlayerState.Normal ||
-                    hitHandler.currentState == PlayerHitHandler.PlayerState.DeathBomb)
+                PlayerHitHandler hitHandler = PlayerMove.Instance.GetComponentInChildren<PlayerHitHandler>();
+
+                if (hitHandler != null)
                 {
-                    EnemyStatus boss = FindObjectOfType<EnemyStatus>();
-                    if (boss != null)
+                    if (hitHandler.currentState == PlayerHitHandler.PlayerState.Normal ||
+                        hitHandler.currentState == PlayerHitHandler.PlayerState.DeathBomb)
                     {
-                        boss.FailSpell();
+                        EnemyStatus boss = FindObjectOfType<EnemyStatus>();
+                        if (boss != null)
+                        {
+                            boss.FailSpell();
+                        }
+
+
+                        StartCoroutine(ExecuteFantasySeal());
                     }
-
-
-                    StartCoroutine(ExecuteFantasySeal());
                 }
             }
         }

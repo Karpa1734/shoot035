@@ -65,10 +65,15 @@ public class GrazeAnimation : MonoBehaviour
 
     private void UpdateSprite()
     {
-        // カレントフレームのSpriteを設定
+        // 追加：sprites が未設定、または要素がない場合のチェック
+        if (sprites == null || sprites.Length == 0) return;
+
         if (currentFrame >= 0 && currentFrame < sprites.Length)
         {
-            spriteRenderer.sprite = sprites[currentFrame];
+            if (spriteRenderer != null)
+            {
+                spriteRenderer.sprite = sprites[currentFrame];
+            }
         }
     }
 }

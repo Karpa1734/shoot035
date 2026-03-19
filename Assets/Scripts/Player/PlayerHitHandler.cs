@@ -93,6 +93,8 @@ public class PlayerHitHandler : MonoBehaviour
         StartCoroutine(ExplosionAndRebirthRoutine());
     }
 
+    // --- PlayerHitHandler.cs の修正 ---
+
     IEnumerator ExplosionAndRebirthRoutine()
     {
         if (playerMove.IsInvincible)
@@ -101,45 +103,86 @@ public class PlayerHitHandler : MonoBehaviour
             yield break;
         }
 
-        // 被弾位置は現在の座標でOK（エフェクト用）
         Vector3 deathPos = transform.position;
         currentState = PlayerState.Hit;
 
-        // 1. エフェクト生成
+        // 1. エフェクトと弾消し（共通）
         if (explosionEffectPrefab != null) Instantiate(explosionEffectPrefab, deathPos, Quaternion.identity);
-
-        // 2. 弾消し
         if (bulletClearPrefab != null)
         {
             GameObject clearObj = Instantiate(bulletClearPrefab);
             clearObj.SendMessage("StartClearing", deathPos, SendMessageOptions.DontRequireReceiver);
         }
 
-        // --- 修正ポイント：親（Player本体）ごと画面外へ飛ばす ---
+        // --- 修正ポイント：残機に関わらず、一旦プレイヤーを画面外へ飛ばして非表示にする ---
+        // これによりゲームオーバー時も「その場で止まる」のではなく「ミスして消える」演出になります
         playerMove.enabled = false;
-        transform.parent.position = new Vector3(-2.0f, -100f, 0);
-        if (characterRenderer != null) characterRenderer.enabled = false;
+        transform.parent.position = new Vector3(-2.0f, -100f, 0); // 画面外へ
+        if (characterRenderer != null) characterRenderer.enabled = false; // 非表示
 
-        yield return new WaitForSeconds(downTime);
+        // --- 残機チェック ---
+        if (PlayerStatusManager.Instance.SubtractLifeAndCheckRebirth())
+        {
+            // 復活可能な場合：既存のダウンタイム待機
+            yield return new WaitForSeconds(downTime);
 
-        // --- 復帰処理：親（Player本体）の座標を戻す ---
+            // 復活処理（Rebirth）
+            currentState = PlayerState.Rebirth;
+            transform.parent.position = new Vector3(-2.0f, -6.0f, 0);
+            if (characterRenderer != null) characterRenderer.enabled = true;
+
+            float elapsed = 0;
+            Vector3 startPos = transform.parent.position;
+            Vector3 targetPos = new Vector3(-2.0f, -3.5f, 0);
+            while (elapsed < 0.6f)
+            {
+                transform.parent.position = Vector3.Lerp(startPos, targetPos, elapsed / 0.6f);
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            playerMove.enabled = true;
+            currentState = PlayerState.Normal;
+            playerMove.SetInvincible(invincibilityTime);
+        }
+        else
+        {
+            // --- 修正ポイント：最後の残機だった場合 ---
+            // 爆発を見てから1秒間待機する
+            yield return new WaitForSeconds(1.0f);
+
+            // ゲームオーバーUIの表示指示
+            PlayerStatusManager.Instance.TriggerGameOver();
+            yield break;
+        }
+    }
+    // コンティニューボタンから呼ばれる復活開始メソッド
+    public void StartRebirthFromContinue()
+    {
+        StartCoroutine(RebirthRoutine());
+    }
+
+    private IEnumerator RebirthRoutine()
+    {
         currentState = PlayerState.Rebirth;
+
+        // 画面下部から登場
         transform.parent.position = new Vector3(-2.0f, -6.0f, 0);
         if (characterRenderer != null) characterRenderer.enabled = true;
 
         float elapsed = 0;
         Vector3 startPos = transform.parent.position;
-        Vector3 targetPos = new Vector3(-2.0f, -3.5f, 0);
+        Vector3 targetPos = new Vector3(-2.0f, -3.5f, 0); // 目標位置
+
         while (elapsed < 0.6f)
         {
-            // 親の座標をアニメーションさせる
             transform.parent.position = Vector3.Lerp(startPos, targetPos, elapsed / 0.6f);
-            elapsed += Time.deltaTime;
+            elapsed += Time.unscaledDeltaTime; // ポーズ解除直後のため unscaled を推奨
             yield return null;
         }
 
         playerMove.enabled = true;
         currentState = PlayerState.Normal;
-        playerMove.SetInvincible(invincibilityTime);
+        playerMove.SetInvincible(invincibilityTime); // 復活後の無敵付与
     }
 }
