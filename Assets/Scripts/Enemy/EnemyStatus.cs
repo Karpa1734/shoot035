@@ -28,6 +28,10 @@ public struct BossPhaseData
     public float invincibleDuration;
     public bool hideHealthBar;
     public bool declareImmediately;
+
+    // ★追加：このスペル専用の背景プレハブ
+    [Tooltip("スペル発動時に生成する背景プレハブ。ルートにSpellBackgroundControllerが必要")]
+    public GameObject spellBackgroundPrefab;
 }
 
 public class EnemyStatus : MonoBehaviour
@@ -62,6 +66,9 @@ public class EnemyStatus : MonoBehaviour
     private float realElapsedTime = 0f; // 実経過時間の計測 [cite: 349]
 
     public SpellRingEffect_Line spellRing; // インスペクターでセット
+
+    // ★追加：現在表示中の背景のコントローラー
+    private SpellBackgroundController currentBackground;
     void Awake() { InitializePhase(0); }
 
 
@@ -396,7 +403,8 @@ public class EnemyStatus : MonoBehaviour
 
         // 3. 魔法陣（スペルリング）を消す [cite: 21]
         if (spellRing != null) spellRing.Deactivate();
-
+        // ★追加：ボスの名前とライフカウント（星）を消す
+        if (BossLifeCountUI.Instance != null) BossLifeCountUI.Instance.Hide();
         // 4. オーラ/チャージエフェクトなどを強制停止
         // ボスの子オブジェクトとして配置されている演出用パーツをすべてオフにする
         foreach (Transform child in transform)
@@ -414,7 +422,14 @@ public class EnemyStatus : MonoBehaviour
         {
             ScoreManager.Instance.AddScore((long)bonus);
         }
-
+        // ==========================================
+        // ★追加：専用背景を爆発に合わせて消去
+        // ==========================================
+        if (currentBackground != null)
+        {
+            currentBackground.FadeOutAndDestroy();
+            currentBackground = null;
+        }
         // 本体を非表示にして、UIが消えるのを待ってから Destroy
         SpriteRenderer sr = GetComponentInChildren<SpriteRenderer>();
         if (sr != null) sr.enabled = false;
@@ -462,6 +477,8 @@ public class EnemyStatus : MonoBehaviour
     }
     private void TriggerSpellDeclaration(int index)
     {
+        // 追加：現在のフェーズデータを変数に代入して使いやすくする
+        var phase = phases[index];
         if (BossTimerUI.Instance != null) BossTimerUI.Instance.SetPhaseType(phases[index].type);
 
         for (int i = 0; i < 4; i++)
@@ -492,6 +509,29 @@ public class EnemyStatus : MonoBehaviour
                 enemySpellUI.HideSpell();
             }
         }
+
+        // ==========================================
+        // ★追加：専用背景の生成とフェードイン
+        // ==========================================
+        if (phase.spellBackgroundPrefab != null)
+        {
+            // すでに背景があれば消す（念のため）
+            if (currentBackground != null) currentBackground.FadeOutAndDestroy();
+
+            // 生成 (カメラの奥、または専用レイヤーに配置する設定がプレハブ側に必要)
+            GameObject bgObj = Instantiate(phase.spellBackgroundPrefab, Vector3.zero, Quaternion.identity);
+            currentBackground = bgObj.GetComponent<SpellBackgroundController>();
+
+            if (currentBackground != null)
+            {
+                currentBackground.FadeIn();
+            }
+            else
+            {
+                Debug.LogError($"背景プレハブ {phase.spellBackgroundPrefab.name} に SpellBackgroundController が付いていません。");
+            }
+        }
+
     }
 
     IEnumerator PhaseTransitionSequence()
@@ -519,7 +559,14 @@ public class EnemyStatus : MonoBehaviour
         // スペル名などの UI を一旦隠す（リザルト表示は次で行う）
         if (hasNextPhase && enemySpellUI != null) enemySpellUI.HideSpell();
         if (currentPatternObj != null) Destroy(currentPatternObj);
-
+        // ========================================================
+        // ★修正ポイント：途中フェーズの場合のみ、ここで背景を消す
+        // ========================================================
+        if (hasNextPhase && currentBackground != null)
+        {
+            currentBackground.FadeOutAndDestroy();
+            currentBackground = null;
+        }
         // 弾消しエフェクト
         if (bulletClearPrefab != null)
         {
@@ -582,9 +629,8 @@ public class EnemyStatus : MonoBehaviour
         else
         {
             // ========================================================
-            // 最終フェーズ：リザルト表示を DeathSequence に丸投げする
+            // 最終フェーズ：背景は消さずに DeathSequence へ
             // ========================================================
-            // 最終撃破時：リザルト情報を DeathSequence に渡して実行
             if (currentUI != null) Destroy(currentUI.gameObject);
             StartCoroutine(DeathSequence(bonusAmount, clearTime, realElapsedTime, isGetBonus, isCaptureTimeoutFailure));
         }

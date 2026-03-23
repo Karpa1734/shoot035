@@ -63,7 +63,7 @@ public class PlayerHitHandler : MonoBehaviour
         {
             // --- 追加：被弾した「瞬間」にスペル失敗を通知する ---
             // シーン内の EnemyStatus を探して通知
-            EnemyStatus boss = FindObjectOfType<EnemyStatus>();
+            EnemyStatus boss = Object.FindFirstObjectByType<EnemyStatus>();
             if (boss != null)
             {
                 boss.FailSpell();

@@ -19,7 +19,8 @@ public class ScoreManager : MonoBehaviour
     private long highScore = 0;      // ★追加：内部ハイスコア
     private int grazeCount = 0;
     private Coroutine scoreCoroutine;
-
+    // ★追加：現在画面に表示されているハイスコアの数値
+    private long visualHighScore = 0;
     void Awake()
     {
         if (Instance == null) Instance = this;
@@ -27,7 +28,8 @@ public class ScoreManager : MonoBehaviour
         // ★追加：セーブデータからハイスコアを読み込む
         // SaveDataに "HighScore" というキーが設定されている必要があります
         highScore = SaveManager.Load<long>("HighScore");
-
+        // ★初期化：表示用ハイスコアもロードした値に合わせる
+        visualHighScore = highScore;
         UpdateScoreText(0);
         UpdateGrazeText(0);
         UpdateHighScoreText(highScore); // ★追加：ハイスコアの初期表示
@@ -60,7 +62,6 @@ public class ScoreManager : MonoBehaviour
         if (currentScore > highScore)
         {
             highScore = currentScore;
-            UpdateHighScoreText(highScore);
 
             // リアルタイムで保存したい場合はここでSaveを呼ぶ
             // SaveManager.Save<long>("HighScore", highScore);
@@ -99,19 +100,35 @@ public class ScoreManager : MonoBehaviour
             elapsed += Time.deltaTime;
             float t = elapsed / rollingDuration;
 
-            // イージング（後半滑らかに減速）
             float easedT = 1f - Mathf.Pow(1f - t, 3f);
 
             displayScore = (long)Mathf.Lerp(startScore, currentScore, easedT);
+            long visualScore = (displayScore / 10) * 10;
 
-            // 表示中も1の位を0に固定して更新
-            UpdateScoreText((displayScore / 10) * 10);
+            // 1. スコアテキストを更新
+            UpdateScoreText(visualScore);
+
+            // 2. ★ハイスコア表示の同期処理
+            // 「表示上のスコア」が「表示上のハイスコア」を上回った時だけ、ハイスコアも増やす
+            if (visualScore > visualHighScore)
+            {
+                visualHighScore = visualScore;
+                UpdateHighScoreText(visualHighScore);
+            }
+
             yield return null;
         }
 
-        // 最後に確実に目標値へ合わせる
         displayScore = currentScore;
         UpdateScoreText(currentScore);
+
+        // 3. ★最後に確実にハイスコアを最終的な値に合わせる
+        if (currentScore > visualHighScore)
+        {
+            visualHighScore = currentScore;
+            UpdateHighScoreText(visualHighScore);
+        }
+
         scoreCoroutine = null;
     }
 

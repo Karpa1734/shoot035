@@ -24,6 +24,9 @@ public class BossLifeCountUI : MonoBehaviour
     private Camera mainCamera;
     private List<BossStarItem> activeStars = new List<BossStarItem>();
 
+    // --- 追加：非表示フラグ ---
+    private bool isHiding = false;
+
     void Awake()
     {
         if (Instance == null) Instance = this;
@@ -35,20 +38,25 @@ public class BossLifeCountUI : MonoBehaviour
     public void Initialize(EnemyStatus status)
     {
         targetStatus = status;
+        isHiding = false; // 初期化時にフラグをリセット
         nameText.text = status.bossName;
-        // 名前の初期状態を透明に
         nameText.color = new Color(nameText.color.r, nameText.color.g, nameText.color.b, 0);
 
         StartCoroutine(FadeInText());
         UpdateStars();
     }
 
+    // --- 追加：外部から非表示を指示するメソッド ---
+    public void Hide()
+    {
+        isHiding = true;
+    }
+
     void Update()
     {
-        // --- 修正ポイント：ターゲットがいない（死んだ）場合はフェードアウトして終了 ---
-        if (targetStatus == null)
+        // --- 修正ポイント：ターゲットがいない、または非表示フラグが立っている場合はフェードアウト ---
+        if (targetStatus == null || isHiding)
         {
-            // タイマーと同様に、徐々に透明にする
             canvasGroup.alpha = Mathf.MoveTowards(canvasGroup.alpha, 0f, Time.deltaTime * 3f);
             return;
         }
@@ -71,7 +79,6 @@ public class BossLifeCountUI : MonoBehaviour
 
         int currentLife = targetStatus.GetRemainingLifeCount();
 
-        // 星が減る演出（拡大しながら消滅）
         while (activeStars.Count > currentLife)
         {
             BossStarItem lastStar = activeStars[activeStars.Count - 1];
@@ -79,7 +86,6 @@ public class BossLifeCountUI : MonoBehaviour
             lastStar.Break();
         }
 
-        // 星が増える演出（フェードイン）
         while (activeStars.Count < currentLife)
         {
             GameObject obj = Instantiate(starPrefab, starParent);
@@ -92,7 +98,7 @@ public class BossLifeCountUI : MonoBehaviour
     IEnumerator FadeInText()
     {
         float elapsed = 0f;
-        while (elapsed < 0.5f) // 30フレーム演出
+        while (elapsed < 0.5f)
         {
             elapsed += Time.deltaTime;
             nameText.color = new Color(nameText.color.r, nameText.color.g, nameText.color.b, elapsed / 0.5f);

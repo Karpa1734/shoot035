@@ -175,7 +175,16 @@ public class EnemyBullet : MonoBehaviour
             Destroy(gameObject); // プールがない、またはプレハブ指定がない場合は破壊
         }
     }
+    // EnemyBullet.cs に追加
+    public void UpdateAngle(float newAngle)
+    {
+        this.angle = newAngle;
+        // 進行方向に合わせてスプライトの向きも更新
+        transform.rotation = Quaternion.Euler(0, 0, angle - 90f);
+    }
 
+    // 角度を外部から参照できるようにゲッターも用意
+    public float GetAngle() => angle;
     public bool TryGraze()
     {
         if (isGrazed) return false;

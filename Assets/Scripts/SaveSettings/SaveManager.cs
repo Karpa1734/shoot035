@@ -64,6 +64,8 @@ public class SaveManager
 
     private SaveManager(List<BitLayout> bitLayout, string path)
     {
+        saveInits ??= new List<SaveInit>(); // リストが空なら初期化
+
         foreach (var b in saveInits)
         {
             List<BitLayout> bit = b.Invoke();
@@ -72,7 +74,10 @@ public class SaveManager
         _container = new BitContainer(bitLayout.ToArray());
         _path = path;
 
+        // 重要：自分自身を Instance に先に登録する
+        _instance = this;
         // ファイルが存在する場合のみ読み込む
+        // ReadFileの中で Instance を使わないように修正したので、ここで呼んでも安全です
         if (File.Exists(_path)) ReadFile(_path);
     }
     public static T FromByte<T>(byte[] data)
@@ -142,32 +147,30 @@ public static T Load<T>(string name)
         Instance._container.Write(name, bytes);
         Instance.WriteFile(Instance._path);
     }
-
+    // --- 修正箇所 2: ReadFile ---
     public void ReadFile(string filePath)
     {
-        FileStream fileStream;
-        if (!File.Exists(filePath))
-            fileStream = File.Create(filePath);
-        else
-            fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+        if (!File.Exists(filePath)) return;
 
-        byte[] buffer = new byte[fileStream.Length];
-        fileStream.Read(buffer, 0, buffer.Length);
-        fileStream.Close();
-        Instance._container.ToBytes(buffer);
+        using (FileStream fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+        {
+            byte[] buffer = new byte[fileStream.Length];
+            fileStream.Read(buffer, 0, buffer.Length);
+
+            // 【修正】 Instance._container ではなく _container を直接使う
+            _container.ToBytes(buffer);
+        }
     }
 
+    // --- 修正箇所 3: WriteFile ---
     public void WriteFile(string filePath)
     {
-        FileStream fileStream;
-        if (!File.Exists(filePath))
-            fileStream = File.Create(filePath);
-        else
-            fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Write);
-        byte[] data = Instance._container.GetBytes();
-        fileStream.Write(data, 0, data.Length);
-        fileStream.Close();
-        return;
+        using (FileStream fileStream = new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.Write))
+        {
+            // 【修正】 Instance._container ではなく _container を直接使う
+            byte[] data = _container.GetBytes();
+            fileStream.Write(data, 0, data.Length);
+        }
     }
 
 

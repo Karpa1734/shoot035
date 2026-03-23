@@ -37,7 +37,7 @@ public class SpellManager : MonoBehaviour
                     if (hitHandler.currentState == PlayerHitHandler.PlayerState.Normal ||
                         hitHandler.currentState == PlayerHitHandler.PlayerState.DeathBomb)
                     {
-                        EnemyStatus boss = FindObjectOfType<EnemyStatus>();
+                        EnemyStatus boss = Object.FindFirstObjectByType<EnemyStatus>();
                         if (boss != null)
                         {
                             boss.FailSpell();

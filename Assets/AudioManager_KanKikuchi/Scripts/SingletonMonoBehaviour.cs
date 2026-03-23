@@ -17,7 +17,7 @@ public class SingletonMonoBehaviour<T> : MonoBehaviourWithInit where T : MonoBeh
 			if (_instance == null) {
 
 				//シーン内からインスタンスを取得
-				_instance = (T) FindObjectOfType(typeof(T));
+				_instance = (T)Object.FindFirstObjectByType<T>();
 
 				//シーン内に存在しない場合はエラー
 				if (_instance == null) {

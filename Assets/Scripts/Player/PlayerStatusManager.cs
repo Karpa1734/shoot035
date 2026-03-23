@@ -65,7 +65,7 @@ public class PlayerStatusManager : MonoBehaviour
         UpdateUI();
 
         // プレイヤーを復活させる演出を開始
-        PlayerHitHandler hitHandler = FindObjectOfType<PlayerHitHandler>();
+        PlayerHitHandler hitHandler = Object.FindFirstObjectByType<PlayerHitHandler>();
         if (hitHandler != null) hitHandler.StartRebirthFromContinue();
     }
 

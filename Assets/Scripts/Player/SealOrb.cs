@@ -142,7 +142,7 @@ public class SealOrb : MonoBehaviour
 
     private EnemyStatus FindNearestEnemy()
     {
-        EnemyStatus[] enemies = GameObject.FindObjectsOfType<EnemyStatus>();
+        EnemyStatus[] enemies = Object.FindObjectsByType<EnemyStatus>(FindObjectsSortMode.None);
         EnemyStatus nearest = null;
         float minDistance = Mathf.Infinity;
 

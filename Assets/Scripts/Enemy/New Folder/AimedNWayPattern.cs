@@ -23,7 +23,6 @@ public class AimedNWayPattern : BossPatternBase
     // Å‚‘¬“x‚ğv‚¢Ø‚Á‚Äã‚°‚Ü‚·B
     public float moveMaxSpeed = 12.0f;
 
-    private float timer = 0f;
     private bool isMoving = false;
     private Coroutine fireRoutine;
     protected override void Awake()
