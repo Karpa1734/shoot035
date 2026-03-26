@@ -6,7 +6,8 @@ using UnityEngine;
 
 // フェーズの種類を定義
 public enum PhaseType { Normal, SpellCard, Endurance }
-
+// EnemyStatus.cs の冒頭（PhaseType の下あたり）に追加
+public enum SpecialDropType { None, Bomb, BombPiece, Extend, ExtendPiece }
 [Serializable]
 public struct BossPhaseData
 {
@@ -32,6 +33,12 @@ public struct BossPhaseData
     // ★追加：このスペル専用の背景プレハブ
     [Tooltip("スペル発動時に生成する背景プレハブ。ルートにSpellBackgroundControllerが必要")]
     public GameObject spellBackgroundPrefab;
+
+    [Header("Drop Items")]
+    public int powerDropCount; // このフェーズ終了時に出すパワーアイテム数
+    public int scoreDropCount; // このフェーズ終了時に出すスコアアイテム数
+    // ★追加：特殊アイテムのドロップ設定
+    public SpecialDropType specialDrop;
 }
 
 public class EnemyStatus : MonoBehaviour
@@ -393,7 +400,8 @@ public class EnemyStatus : MonoBehaviour
         SEManager.Instance.Play(SEPath.BOSS_END_END, 0.5f);
         BossEffectManager.Instance?.PlayBurstEffect(Color.white, 60, transform.position);
         if (CameraShake.Instance != null) CameraShake.Instance.Shake(1.0f, 0.6f);
-
+        // ★追加：大爆発の前に弾をすべてアイテムに変えておく
+        ConvertBulletsToItems();
         // 1. スペル名表示を引っ込める [cite: 21, 22]
         if (enemySpellUI != null) enemySpellUI.HideSpell();
 
@@ -418,6 +426,19 @@ public class EnemyStatus : MonoBehaviour
             enemySpellUI.ShowSpellResult(bonus, clearTime, realTime, isGet, isFail);
         }
 
+        // ==========================================
+        // ★追加：撃破時のアイテムドロップ
+        // ==========================================
+        if (ItemSpawner.Instance != null)
+        {
+            ItemSpawner.Instance.DropItemsOnDeath(
+                transform.position,
+                phases[currentPhaseIndex].powerDropCount,
+                phases[currentPhaseIndex].scoreDropCount
+            );
+        }
+        // ★追加：特殊アイテムのドロップ
+        DropSpecialItem(currentPhaseIndex);
         if (isGet && ScoreManager.Instance != null)
         {
             ScoreManager.Instance.AddScore((long)bonus);
@@ -533,7 +554,35 @@ public class EnemyStatus : MonoBehaviour
         }
 
     }
+    /// <summary>
+    /// 画面内のすべての敵弾を SCORE00 アイテムに変換する
+    /// </summary>
+    public void ConvertBulletsToItems()
+    {
+        GameObject[] bullets = GameObject.FindGameObjectsWithTag("EnemyBullet");
 
+        foreach (GameObject bulletObj in bullets)
+        {
+            // 1. アイテムを生成（即座に回収モードをON）
+            if (ItemSpawner.Instance != null)
+            {
+                ItemSpawner.Instance.SpawnItem(ItemController.ITEM_TYPE.SCORE00, bulletObj.transform.position, true);
+            }
+
+            // 2. ★修正：Destroy ではなく弾の消滅メソッドを呼ぶ
+            EnemyBullet bulletScript = bulletObj.GetComponent<EnemyBullet>();
+            if (bulletScript != null)
+            {
+                // 引数に true を渡すことで、弾側の「消滅エフェクト再生」を走らせる
+                bulletScript.Deactivate(true);
+            }
+            else
+            {
+                // スクリプトがない場合のみ Destroy で対応
+                Destroy(bulletObj);
+            }
+        }
+    }
     IEnumerator PhaseTransitionSequence()
     {
         isTransitioning = true;
@@ -567,9 +616,12 @@ public class EnemyStatus : MonoBehaviour
             currentBackground.FadeOutAndDestroy();
             currentBackground = null;
         }
-        // 弾消しエフェクト
+        // 弾消しエフェクトの発生タイミング
         if (bulletClearPrefab != null)
         {
+            // ★追加：エフェクト発生と同時に、本物の弾をアイテムに変える
+            ConvertBulletsToItems();
+
             GameObject effector = Instantiate(bulletClearPrefab, transform.position, Quaternion.identity);
             effector.GetComponent<BulletClearEffect>()?.StartClearing(transform.position);
         }
@@ -595,7 +647,17 @@ public class EnemyStatus : MonoBehaviour
                 Destroy(currentUI.gameObject);
                 currentUI = null;
             }
-
+            if (ItemSpawner.Instance != null)
+            {
+                // 現在のフェーズのドロップ設定を参照
+                ItemSpawner.Instance.DropItemsOnDeath(
+                    transform.position,
+                    phases[currentPhaseIndex].powerDropCount,
+                    phases[currentPhaseIndex].scoreDropCount
+                );
+            }
+            // ★追加：特殊アイテムのドロップ
+            DropSpecialItem(currentPhaseIndex);
             currentPhaseIndex = nextIndex;
             maxHP = phases[currentPhaseIndex].maxHP;
             currentHP = maxHP;
@@ -636,5 +698,27 @@ public class EnemyStatus : MonoBehaviour
         }
 
         realElapsedTime = 0f;
+    }
+    private void DropSpecialItem(int phaseIndex)
+    {
+        if (ItemSpawner.Instance == null) return;
+
+        SpecialDropType dropType = phases[phaseIndex].specialDrop;
+        if (dropType == SpecialDropType.None) return;
+
+        ItemController.ITEM_TYPE itemToSpawn;
+
+        // enum から ITEM_TYPE へ変換
+        switch (dropType)
+        {
+            case SpecialDropType.Bomb: itemToSpawn = ItemController.ITEM_TYPE.BOMB_UP01; break;
+            case SpecialDropType.BombPiece: itemToSpawn = ItemController.ITEM_TYPE.BOMB_UP02; break;
+            case SpecialDropType.Extend: itemToSpawn = ItemController.ITEM_TYPE.LIFE_UP01; break;
+            case SpecialDropType.ExtendPiece: itemToSpawn = ItemController.ITEM_TYPE.LIFE_UP02; break;
+            default: return;
+        }
+
+        // アイテムを1つ生成
+        ItemSpawner.Instance.SpawnItem(itemToSpawn, transform.position);
     }
 }

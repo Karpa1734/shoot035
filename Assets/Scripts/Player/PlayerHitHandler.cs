@@ -23,13 +23,13 @@ public class PlayerHitHandler : MonoBehaviour
 
     // --- 追加：本体のSpriteRendererを特定するため ---
     private SpriteRenderer characterRenderer;
-
+    private ItemEffectHandler itemHandler;
     void Awake()
     {
         // 親オブジェクトや他の子オブジェクトから必要なコンポーネントを自動取得
         if (playerMove == null) playerMove = GetComponentInParent<PlayerMove>();
         if (playerAnim == null) playerAnim = GetComponentInParent<PlayerAnimation>();
-
+        itemHandler = GetComponent<ItemEffectHandler>();
         // 通常、キャラの画像は親か別の子にあるので、それを見つける
         characterRenderer = GetComponentInParent<SpriteRenderer>();
         if (characterRenderer == null)
@@ -48,26 +48,29 @@ public class PlayerHitHandler : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        // 1. 敵弾に触れた場合、無敵に関わらず弾を消す
+        // 1. 敵弾の消去（かすり等のために無敵に関わらず実行）
         if (collision.CompareTag("EnemyBullet"))
         {
             EnemyBullet bullet = collision.GetComponent<EnemyBullet>();
             if (bullet != null) bullet.Deactivate(true);
         }
 
-        // 2. ミス判定のガード
+        // ★修正：アイテム回収をガードの前に持ってくる
+        if (collision.CompareTag("Item"))
+        {
+            itemHandler.HandleItemCollision(collision);
+            return; // アイテムを処理したらここで終わる
+        }
+
+        // 2. ミス判定のガード（ここから下は敵や弾の「ダメージ」に関する処理）
         if (playerMove.IsInvincible || currentState != PlayerState.Normal) return;
 
-        // 3. 被弾開始（敵弾または敵本体）
+        // 3. 被弾開始
         if (collision.CompareTag("EnemyBullet") || collision.CompareTag("Enemy"))
         {
-            // --- 追加：被弾した「瞬間」にスペル失敗を通知する ---
-            // シーン内の EnemyStatus を探して通知
+            // 以前と同じダメージ処理...
             EnemyStatus boss = Object.FindFirstObjectByType<EnemyStatus>();
-            if (boss != null)
-            {
-                boss.FailSpell();
-            }
+            if (boss != null) boss.FailSpell();
 
             currentState = PlayerState.DeathBomb;
             StartCoroutine(CheckDeathBombRoutine());

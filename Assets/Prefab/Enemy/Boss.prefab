@@ -321,6 +321,9 @@ MonoBehaviour:
     hideHealthBar: 0
     declareImmediately: 0
     spellBackgroundPrefab: {fileID: 0}
+    powerDropCount: 0
+    scoreDropCount: 0
+    specialDrop: 2
   - phaseName: "\u58F1\u7B26\u300C\u5F3E\u5E55\uFF11\u300D"
     maxHP: 200
     type: 1
@@ -334,6 +337,9 @@ MonoBehaviour:
     hideHealthBar: 0
     declareImmediately: 1
     spellBackgroundPrefab: {fileID: 5052718470905214699, guid: ed075c54aba94674497b932800e74899, type: 3}
+    powerDropCount: 30
+    scoreDropCount: 30
+    specialDrop: 4
   - phaseName: NonSpell2
     maxHP: 1000
     type: 0
@@ -347,6 +353,9 @@ MonoBehaviour:
     hideHealthBar: 0
     declareImmediately: 0
     spellBackgroundPrefab: {fileID: 0}
+    powerDropCount: 0
+    scoreDropCount: 0
+    specialDrop: 2
   - phaseName: "\u5F10\u7B26\u300C\u5F3E\u5E55\uFF12\u300D"
     maxHP: 200
     type: 1
@@ -360,6 +369,9 @@ MonoBehaviour:
     hideHealthBar: 0
     declareImmediately: 1
     spellBackgroundPrefab: {fileID: 5052718470905214699, guid: ed075c54aba94674497b932800e74899, type: 3}
+    powerDropCount: 30
+    scoreDropCount: 30
+    specialDrop: 4
   bulletClearPrefab: {fileID: 6575740104421894055, guid: f24413bf391b54e41a2768d690b51a76, type: 3}
   enemySpellUI: {fileID: 0}
   enemyMarkerPrefab: {fileID: 5725931542754004518, guid: f23a64b249779594c88afb4817d4c845, type: 3}

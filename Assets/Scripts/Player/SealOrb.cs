@@ -162,34 +162,39 @@ public class SealOrb : MonoBehaviour
     {
         if (Time.timeScale <= 0 || isExploded) return;
 
-        // 1. 敵へのダメージ処理
+        // 1. 敵へのダメージ処理（既存通り）
         EnemyStatus enemy = collision.GetComponent<EnemyStatus>();
         if (enemy != null)
         {
             if (isHomingMode)
             {
-                enemy.TakeDamage(180,true); //
+                enemy.TakeDamage(180, true);
                 Explode();
             }
             else
             {
                 enemy.TakeDamage(20, true);
             }
-            return; // 敵に当たった場合はここで処理終了（弾消し判定は行わない）
+            return;
         }
 
-        // 2. 弾消し処理：Destroy ではなく Deactivate(true) を呼ぶ
+        // 2. 弾消し処理 ＋ ★追加：アイテム化
         if (collision.CompareTag("EnemyBullet"))
         {
             EnemyBullet bullet = collision.GetComponent<EnemyBullet>();
             if (bullet != null)
             {
-                // true を渡すことで消滅エフェクトを発生させ、プールへ戻る
-                bullet.Deactivate(true);
+                // --- ★修正ポイント：ボムで消えた弾をアイテム化して吸い寄せる ---
+                if (ItemSpawner.Instance != null)
+                {
+                    // 弾の位置に SCORE00 アイテムを生成
+                    ItemSpawner.Instance.SpawnItem(ItemController.ITEM_TYPE.SCORE00, bullet.transform.position, true);
+                }
+
+                bullet.Deactivate(true); // 消滅エフェクトを出して消す
             }
             else
             {
-                // 万が一スクリプトがない場合のみ Destroy
                 Destroy(collision.gameObject);
             }
         }

@@ -22,9 +22,9 @@ public class BossMagicCircle : MonoBehaviour
         if (sr != null)
         {
             // Built-inで光らせるための設定
-            Shader additiveShader = Shader.Find("Legacy Shaders/Particles/Additive");
-            if (additiveShader == null) additiveShader = Shader.Find("Sprites/Default");
-            sr.material = new Material(additiveShader);
+            //Shader additiveShader = Shader.Find("Legacy Shaders/Particles/Additive");
+           // if (additiveShader == null) additiveShader = Shader.Find("Sprites/Default");
+           // sr.material = new Material(additiveShader);
             sr.color = new Color(1f, 1f, 1f, 144f / 255f);
 
             // 最初は描画をオフにして、初期化によるチラつきを防ぐ
@@ -71,7 +71,7 @@ public class BossMagicCircle : MonoBehaviour
 
             // 拡大しきった後の計算式
             scale3 = 0.90f; // 0.9で固定
-            scale1 = 0.10f * Mathf.Sin(scale2 * Mathf.Deg2Rad); // 0.1の幅で揺れる
+            scale1 = 0.10f * Mathf.Sin((scale2 / 5) * Mathf.Deg2Rad); // 0.1の幅で揺れる
         }
 
         // 合計スケールを適用 (これで 60フレーム目に 0.9+0.1=1.0 になり、そのまま滑らかに脈動へ移る)
