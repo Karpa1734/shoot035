@@ -31,7 +31,7 @@ public class PauseManager : MonoBehaviour
     private enum PauseState { Main, ConfirmExit, ConfirmRestart }
     private PauseState currentState = PauseState.Main;
     private int confirmIndex = 1; // 0: Yes, 1: No (初期位置をNoに)
-
+    private bool isPracticeResultMode = false; // ★追加：演習リザルト中かどうかのフラグ
     void Start()
     {
         if (pauseCanvas != null) pauseCanvas.SetActive(false);
@@ -46,10 +46,28 @@ public class PauseManager : MonoBehaviour
 
     void Update()
     {
+        // ★追加：練習モード中かつUnityエディタ上のみ、Escキーで即座にリトライ
+#if UNITY_EDITOR
+        if (BossPracticeManager.IsPracticeMode && !isPaused && Input.GetKeyDown(KeyCode.Backspace))
+        {
+            // 決定音などを鳴らしたい場合はここに追加
+            // SEManager.Instance.Play(SEPath.MENUDECIDE, 0.5f);
+
+            Time.timeScale = 1f;
+            // 現在のシーン（演習シーン）を即座に再読込
+            UnityEngine.SceneManagement.SceneManager.LoadScene(
+                UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
+            return; // 下記のポーズ処理を行わずに終了
+        }
+#endif
+
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             if (isPaused)
             {
+                // 演習リザルト中、またはゲームオーバー中は Esc で戻れないようにする
+                if (isPracticeResultMode || isGameOverMode) return;
+
                 if (currentState != PauseState.Main) CancelConfirmation();
                 else ResumeGame();
             }
@@ -128,21 +146,47 @@ public class PauseManager : MonoBehaviour
     {
         switch (selectedIndex)
         {
-            case 0: // 再開
+            case 0: // 再開（一時停止を解除 / コンティニュー）
                 SEManager.Instance.Play(SEPath.MENUDECIDE, 0.5f);
                 if (isGameOverMode) PlayerStatusManager.Instance.PerformContinue();
                 isGameOverMode = false;
                 ResumeGame();
                 break;
-            case 1: // タイトルへ（確認へ）
-                OpenConfirmation(PauseState.ConfirmExit);
+
+            case 1: // タイトルへ / ゲームを終了
+                if (isPracticeResultMode)
+                {
+                    // ★追加：撃破後なら確認なしで即実行
+                    currentState = PauseState.ConfirmExit;
+                    ExecuteConfirmedAction();
+                }
+                else
+                {
+                    // 通常時は確認画面を開く
+                    OpenConfirmation(PauseState.ConfirmExit);
+                }
                 break;
-            case 4: // 最初から（確認へ）
-                OpenConfirmation(PauseState.ConfirmRestart);
+
+            case 4: // 最初からやり直す
+                if (isPracticeResultMode)
+                {
+                    // ★追加：撃破後なら確認なしで即実行
+                    currentState = PauseState.ConfirmRestart;
+                    ExecuteConfirmedAction();
+                }
+                else
+                {
+                    // 通常時は確認画面を開く
+                    OpenConfirmation(PauseState.ConfirmRestart);
+                }
+                break;
+
+            default:
+                // その他の項目（操作説明など）
+                SEManager.Instance.Play(SEPath.MENUDECIDE, 0.5f);
                 break;
         }
     }
-
     void OpenConfirmation(PauseState state)
     {
         SEManager.Instance.Play(SEPath.MENUDECIDE, 0.5f);
@@ -226,7 +270,44 @@ public class PauseManager : MonoBehaviour
             }
         }
     }
+    // ★追加：演習リザルト（撃破後）用のモード設定
+    // ★修正：第2引数 isWin を追加
+    public void SetPracticeResultMode(bool active, bool isWin)
+    {
+        isPracticeResultMode = active;
+        isPaused = active;
 
+        if (active)
+        {
+            pauseCanvas.SetActive(true);
+            Time.timeScale = 0f;
+
+            // 1. 「一時停止を解除 (index 0)」を非表示・選択不可にする
+            menuSelectable[0] = false;
+            if (menuTexts[0] != null) menuTexts[0].gameObject.SetActive(false);
+
+            // 2. ★結果に応じて初期カーソルを変更
+            if (isWin)
+            {
+                // 勝利時：タイトルに戻る (index 1) を選択
+                selectedIndex = 1;
+            }
+            else
+            {
+                // 敗北時：最初からやり直す (index 4) を選択
+                selectedIndex = 4;
+            }
+
+            UpdateMenuVisuals();
+            SEManager.Instance.Play(SEPath.PAUSE, 0.5f);
+        }
+        else
+        {
+            // リセット処理
+            menuSelectable[0] = true;
+            if (menuTexts[0] != null) menuTexts[0].gameObject.SetActive(true);
+        }
+    }
     // 外部からモードを切り替えるメソッド
     public void SetGameOverMode(bool active)
     {

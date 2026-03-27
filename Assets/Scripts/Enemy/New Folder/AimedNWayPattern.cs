@@ -66,7 +66,7 @@ public class AimedNWayPattern : BossPatternBase
         for (int i = 0; i < nWay; i++)
         {
             float currentAngle = startAngle + (angleStep * i);
-            CreateShot(bulletData, transform.position, bulletSpeed, currentAngle); //
+            CreateShot(bulletData, transform.position, bulletSpeed, currentAngle,10); //
         }
     }
 

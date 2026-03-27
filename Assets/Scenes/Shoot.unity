@@ -5169,7 +5169,7 @@ GameObject:
   - component: {fileID: 788560152}
   - component: {fileID: 788560153}
   m_Layer: 0
-  m_Name: GameObject
+  m_Name: PLManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -13854,9 +13854,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 39b8b1d8338d8804696dc525e11ae796, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  bossPrefab: {fileID: 7778457711146669226, guid: 4045067a7876dcf4b9572078090d80bf, type: 3}
-  markerPrefab: {fileID: 1205322758631336222, guid: 960cfe8212fede14d9344a9bdaaf29bb, type: 3}
+  bossPrefab: {fileID: 7778457711146669226, guid: c256a502aea14054ba39b794c21179ec, type: 3}
   bossSpawnPosition: {x: -2, y: 3, z: 0}
+  pauseCanvas: {fileID: 1274728656}
+  postDeathDelay: 2.5
 --- !u!4 &2146639821
 Transform:
   m_ObjectHideFlags: 0

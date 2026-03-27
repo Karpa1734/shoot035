@@ -38,14 +38,23 @@ public class PlayerStatusManager : MonoBehaviour
     public ExtendNotificationUI extendUI;
     public bool IsInvincible => invincibleTimer > 0;
     public bool IsDeathBombWindow => deathBombTimer > 0;
-
+    [Header("Debug Settings")] private bool isDebugInvincible = false; // デバッグ状態を覚える変数
     void Awake()
     {
         if (Instance == null) Instance = this;
-        life = initialLife;
-        bomb = initialSpell;
-    }
 
+        // ★修正：練習モードなら残機とボムを0にする
+        if (BossPracticeManager.IsPracticeMode)
+        {
+            life = 0;
+            bomb = 0;
+        }
+        else
+        {
+            life = initialLife;
+            bomb = initialSpell;
+        }
+    }
     void Start()
     {
         // Start内で直接呼ぶのではなく、コルーチンを開始する
@@ -67,6 +76,28 @@ public class PlayerStatusManager : MonoBehaviour
         // タイマー処理の集約
         if (invincibleTimer > 0) invincibleTimer -= Time.deltaTime;
         if (deathBombTimer > 0) deathBombTimer -= Time.deltaTime;
+
+        // ★追加：エディタ上のみ、キー入力でデバッグ無敵を切り替える
+#if UNITY_EDITOR
+        // Iキーで有効、Uキーで無効
+        if (Input.GetKeyDown(KeyCode.I))
+        {
+            PlayerMove.Instance.SetInvincible(3.0f);
+            isDebugInvincible = true;
+            Debug.Log("<color=cyan>[Debug] 無敵固定: ON</color>");
+        }
+        if (Input.GetKeyDown(KeyCode.U))
+        {
+            PlayerMove.Instance.SetInvincible(0);
+            isDebugInvincible = false;
+            Debug.Log("<color=yellow>[Debug] 無敵固定: OFF</color>");
+        }
+        if (isDebugInvincible && PlayerMove.Instance != null)
+        {
+            // StatusManager ではなく、PlayerMove 側のタイマーを直接固定する
+            PlayerMove.Instance.SetInvincible(3.0f);
+        }
+#endif
     }
 
     // --- アイテム効果などで使うメソッド ---
@@ -196,8 +227,19 @@ public class PlayerStatusManager : MonoBehaviour
     public void TriggerGameOver()
     {
         if (pauseManager == null) return;
-        pauseManager.SetGameOverMode(true);
-        pauseManager.PauseGame();
+
+        // ★修正：練習モード中なら「専用リザルト（敗北）」を表示
+        if (BossPracticeManager.IsPracticeMode)
+        {
+            // 敗北（isWin = false）としてメニューを表示
+            pauseManager.SetPracticeResultMode(true, false);
+        }
+        else
+        {
+            // 通常プレイ時は既存のゲームオーバー処理
+            pauseManager.SetGameOverMode(true);
+            pauseManager.PauseGame();
+        }
     }
 
     // 無敵設定

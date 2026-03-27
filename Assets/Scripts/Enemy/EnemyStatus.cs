@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // フェーズの種類を定義
+public enum BossExitType { Standard, Instant, Retreat }
 public enum PhaseType { Normal, SpellCard, Endurance }
 // EnemyStatus.cs の冒頭（PhaseType の下あたり）に追加
 public enum SpecialDropType { None, Bomb, BombPiece, Extend, ExtendPiece }
@@ -39,10 +40,17 @@ public struct BossPhaseData
     public int scoreDropCount; // このフェーズ終了時に出すスコアアイテム数
     // ★追加：特殊アイテムのドロップ設定
     public SpecialDropType specialDrop;
+
 }
 
 public class EnemyStatus : MonoBehaviour
 {
+    [Header("Debug Settings")]
+    [Tooltip("チェックを入れると、指定したフェーズのみを実行して終了します")]
+    public bool isSinglePhaseTestMode = false;
+    [Tooltip("開始するフェーズの番号 (0から開始)")]
+    public int startPhaseIndex = 0;
+
     [Header("Boss Profile")]
     public string bossName = "Hayase Yuuka";
     [Header("Phase Settings")]
@@ -50,7 +58,7 @@ public class EnemyStatus : MonoBehaviour
     [SerializeField] private GameObject bulletClearPrefab;
 
     [Header("UI Settings")]
-    public EnemySpellCardUI enemySpellUI;
+    [NonSerialized] public EnemySpellCardUI enemySpellUI;
     public GameObject enemyMarkerPrefab;
     public GameObject healthBarPrefab;
 
@@ -73,17 +81,42 @@ public class EnemyStatus : MonoBehaviour
     private float realElapsedTime = 0f; // 実経過時間の計測 [cite: 349]
 
     public SpellRingEffect_Line spellRing; // インスペクターでセット
+    [Header("Exit Settings")]
+    [Tooltip("Standard: 震えて爆発, Instant: その場で即爆発, Retreat: 爆発後に画面外へ去る")]
+    public BossExitType exitType = BossExitType.Standard;
+    [Header("Retreat Settings (for Retreat Type)")]
+    public float retreatWaitTime = 0.8f;      // 爆発後、動き出すまでの溜め
+    public Vector3 retreatMoveDir = new Vector3(0, 10, 0); // 去る方向（(0,10,0)なら上）
+    public float retreatSpeed = 8f;
+    // EnemyStatus.cs 内
+    public List<BossPhaseData> Phases => phases; // これを追加して外から見れるようにする
 
     // ★追加：現在表示中の背景のコントローラー
     private SpellBackgroundController currentBackground;
-    void Awake() { InitializePhase(0); }
+    void Awake()
+    {
+        // 練習モードなら設定を強制上書き
+        if (BossPracticeManager.IsPracticeMode)
+        {
 
+            isSinglePhaseTestMode = true; // ★ここが抜けていたため、次の段階に進んでしまっていた
+            currentPhaseIndex = BossPracticeManager.TargetPhaseIndex;
+        }
+        else
+        {
+            currentPhaseIndex = 0;
+        }
+
+        InitializePhase(currentPhaseIndex);
+    }
 
     // 残りのライフバー本数（星の数）を計算する
     public int GetRemainingLifeCount()
     {
+        // 練習モードなら常に残り0本（現在のバーで終わり）
+        if (BossPracticeManager.IsPracticeMode) return 0;
+
         int count = 0;
-        // 現在のフェーズより後にある「startsNewBar」の数を数える
         for (int i = currentPhaseIndex + 1; i < phases.Count; i++)
         {
             if (phases[i].startsNewBar) count++;
@@ -105,7 +138,8 @@ public class EnemyStatus : MonoBehaviour
 
         if (BossTimerUI.Instance != null) BossTimerUI.Instance.targetStatus = this;
         if (BossLifeCountUI.Instance != null) BossLifeCountUI.Instance.Initialize(this);
-        TriggerSpellDeclaration(0);
+        // ★修正：常に0ではなく、Awakeで決まった currentPhaseIndex を使う
+        TriggerSpellDeclaration(currentPhaseIndex);
     }
     // --- EnemyStatus.cs ---
 
@@ -296,14 +330,16 @@ public class EnemyStatus : MonoBehaviour
     }
 
     // --- 修正：バー全体の最大HP（起点から計算） ---
+    // EnemyStatus.cs
     public float GetBarTotalMaxHP()
     {
+        // 練習モードなら、そのフェーズ単体の最大HPがバー全体の100%になる
+        if (BossPracticeManager.IsPracticeMode) return phases[currentPhaseIndex].maxHP;
+
         float total = 0;
         int startIndex = GetCurrentBarGroupStartIndex();
-
         for (int i = startIndex; i < phases.Count; i++)
         {
-            // 次の「新しいバー」が出てくるまで加算
             if (i > startIndex && phases[i].startsNewBar) break;
             total += phases[i].maxHP;
         }
@@ -313,10 +349,10 @@ public class EnemyStatus : MonoBehaviour
     // --- 修正：現在のバー内の残り合計HP ---
     public float GetBarCurrentHP()
     {
-        float total = currentHP; // 現在のフェーズの残りHP
-        int startIndex = GetCurrentBarGroupStartIndex();
+        // 練習モードなら現在のHPだけを返す
+        if (BossPracticeManager.IsPracticeMode) return currentHP;
 
-        // 現在のフェーズより後の、同じバーに属するHPを足す
+        float total = currentHP;
         for (int i = currentPhaseIndex + 1; i < phases.Count; i++)
         {
             if (phases[i].startsNewBar) break;
@@ -328,19 +364,19 @@ public class EnemyStatus : MonoBehaviour
     // --- 修正：ピンの位置計算（起点から計算） ---
     public List<float> GetBarThresholds()
     {
+        // 練習モードなら区切りピンを表示しない（空のリストを返す）
+        if (BossPracticeManager.IsPracticeMode) return new List<float>();
+
         List<float> thresholds = new List<float>();
         float barMax = GetBarTotalMaxHP();
         if (barMax <= 0) return thresholds;
 
         int startIndex = GetCurrentBarGroupStartIndex();
         float accumulatedHP = 0;
-
         for (int i = startIndex; i < phases.Count; i++)
         {
             if (i > startIndex && phases[i].startsNewBar) break;
-
             accumulatedHP += phases[i].maxHP;
-            // 次のフェーズが同じバー内ならピンを打つ
             if (i + 1 < phases.Count && !phases[i + 1].startsNewBar)
             {
                 thresholds.Add((barMax - accumulatedHP) / barMax);
@@ -366,7 +402,7 @@ public class EnemyStatus : MonoBehaviour
         }
     }
 
-    // 既存の Die() は削除またはコメントアウトし、こちらに差し替え
+    // パターン1: Standard (一回移動してから爆発)
     private IEnumerator DeathSequence(int bonus, float clearTime, float realTime, bool isGet, bool isFail)
     {
         isTransitioning = true;
@@ -375,8 +411,9 @@ public class EnemyStatus : MonoBehaviour
 
         SEManager.Instance.Play(SEPath.BOSS_END_BEGIN, 0.5f);
 
+        // ★修正：添付ファイルの移動ロジックを適用
         Vector3 startPos = transform.position;
-        Vector3 targetPos = startPos + new Vector3(UnityEngine.Random.Range(-0.2f, 0.2f), UnityEngine.Random.Range(-0.2f, 0.2f), 0);
+        Vector3 targetPos = startPos + new Vector3(UnityEngine.Random.Range(-0.3f, 0.3f), UnityEngine.Random.Range(0.2f, 0.5f), 0);
 
         int totalFrames = 90;
         for (int i = 0; i <= totalFrames; i++)
@@ -385,80 +422,67 @@ public class EnemyStatus : MonoBehaviour
             float easedT = t * t * (3f - 2f * t);
             transform.position = Vector3.Lerp(startPos, targetPos, easedT);
 
-            if (i % 3 == 0)
-            {
-                BossEffectManager.Instance?.PlayBurstEffect(Color.white, 1, transform.position);
-            }
+            if (i % 3 == 0) BossEffectManager.Instance?.PlayBurstEffect(Color.white, 1, transform.position);
             yield return null;
         }
 
-        // ==========================================
-        // ★ ここが「最後の爆発」タイミング：すべてを一斉に消去
-        // ==========================================
-
         if (ctrl != null) ctrl.SetMoving(false);
+        ExecuteBigExplosion();
+        FinalizeBossClear(bonus, clearTime, realTime, isGet, isFail);
+
+        // ★修正：爆発の瞬間に本体を非表示にし、確実に削除する
+        foreach (var sr in GetComponentsInChildren<SpriteRenderer>()) sr.enabled = false;
+        GetComponent<Collider2D>().enabled = false;
+
+        yield return null;
+        Destroy(gameObject); // 削除
+    }
+
+    // パターン2: Instant (即大爆発)
+    private IEnumerator InstantDeathSequence(int bonus, float clearTime, float realTime, bool isGet, bool isFail)
+    {
+        isTransitioning = true;
+        ExecuteBigExplosion();
+        FinalizeBossClear(bonus, clearTime, realTime, isGet, isFail);
+
+        foreach (var sr in GetComponentsInChildren<SpriteRenderer>()) sr.enabled = false;
+        GetComponent<Collider2D>().enabled = false;
+        yield return null;
+        Destroy(gameObject);
+    }
+
+    // パターン3: Retreat (即大爆発 + 撤退)
+    private IEnumerator RetreatSequence(int bonus, float clearTime, float realTime, bool isGet, bool isFail)
+    {
+        isTransitioning = true;
+        ExecuteBigExplosion();
+        FinalizeBossClear(bonus, clearTime, realTime, isGet, isFail);
+
+        yield return new WaitForSeconds(retreatWaitTime);
+
+        BossController ctrl = GetComponent<BossController>();
+        if (ctrl != null) ctrl.SetMoving(true);
+
+        Vector3 startPos = transform.position;
+        Vector3 targetPos = startPos + retreatMoveDir;
+
+        float elapsed = 0;
+        while (elapsed < 2.0f)
+        {
+            transform.position = Vector3.MoveTowards(transform.position, targetPos, retreatSpeed * Time.deltaTime);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        Destroy(gameObject);
+    }
+
+    // 共通の大爆発エフェクト呼び出し
+    private void ExecuteBigExplosion()
+    {
         SEManager.Instance.Play(SEPath.BOSS_END_END, 0.5f);
         BossEffectManager.Instance?.PlayBurstEffect(Color.white, 60, transform.position);
-        if (CameraShake.Instance != null) CameraShake.Instance.Shake(1.0f, 0.6f);
-        // ★追加：大爆発の前に弾をすべてアイテムに変えておく
-        ConvertBulletsToItems();
-        // 1. スペル名表示を引っ込める [cite: 21, 22]
-        if (enemySpellUI != null) enemySpellUI.HideSpell();
-
-        // 2. タイマーを非表示にする（isTimerActiveをfalseにするだけでなくUI自体を消す） 
-        isTimerActive = false;
-        if (BossTimerUI.Instance != null) BossTimerUI.Instance.gameObject.SetActive(false);
-
-        // 3. 魔法陣（スペルリング）を消す [cite: 21]
-        if (spellRing != null) spellRing.Deactivate();
-        // ★追加：ボスの名前とライフカウント（星）を消す
-        if (BossLifeCountUI.Instance != null) BossLifeCountUI.Instance.Hide();
-        // 4. オーラ/チャージエフェクトなどを強制停止
-        // ボスの子オブジェクトとして配置されている演出用パーツをすべてオフにする
-        foreach (Transform child in transform)
-        {
-            child.gameObject.SetActive(false);
-        }
-
-        // 5. ボーナスリザルトを表示
-        if (enemySpellUI != null)
-        {
-            enemySpellUI.ShowSpellResult(bonus, clearTime, realTime, isGet, isFail);
-        }
-
-        // ==========================================
-        // ★追加：撃破時のアイテムドロップ
-        // ==========================================
-        if (ItemSpawner.Instance != null)
-        {
-            ItemSpawner.Instance.DropItemsOnDeath(
-                transform.position,
-                phases[currentPhaseIndex].powerDropCount,
-                phases[currentPhaseIndex].scoreDropCount
-            );
-        }
-        // ★追加：特殊アイテムのドロップ
-        DropSpecialItem(currentPhaseIndex);
-        if (isGet && ScoreManager.Instance != null)
-        {
-            ScoreManager.Instance.AddScore((long)bonus);
-        }
-        // ==========================================
-        // ★追加：専用背景を爆発に合わせて消去
-        // ==========================================
-        if (currentBackground != null)
-        {
-            currentBackground.FadeOutAndDestroy();
-            currentBackground = null;
-        }
-        // 本体を非表示にして、UIが消えるのを待ってから Destroy
-        SpriteRenderer sr = GetComponentInChildren<SpriteRenderer>();
-        if (sr != null) sr.enabled = false;
-        Collider2D col = GetComponent<Collider2D>();
-        if (col != null) col.enabled = false;
-
-        yield return new WaitForSeconds(4.5f);
-        Destroy(gameObject);
+        if (CameraShake.Instance != null) CameraShake.Instance.Shake(0.4f, 0.6f);
     }
     // スペル名表示やタイマー位置の「見た目」の更新
 
@@ -498,61 +522,34 @@ public class EnemyStatus : MonoBehaviour
     }
     private void TriggerSpellDeclaration(int index)
     {
-        // 追加：現在のフェーズデータを変数に代入して使いやすくする
         var phase = phases[index];
-        if (BossTimerUI.Instance != null) BossTimerUI.Instance.SetPhaseType(phases[index].type);
+        if (BossTimerUI.Instance != null) BossTimerUI.Instance.SetPhaseType(phase.type);
 
-        for (int i = 0; i < 4; i++)
-        {
-            BossEffectManager.Instance?.PlayChargeEffect(0.3f,Color.white,transform.position);
-        }
+        for (int i = 0; i < 4; i++) BossEffectManager.Instance?.PlayChargeEffect(0.3f, Color.white, transform.position);
 
-        // --- 修正：カウントダウンと計測を「宣言（移動開始）」と同時に開始する ---
-        currentTimer = phases[index].timeLimit;
+        currentTimer = phase.timeLimit;
         isTimerActive = currentTimer > 0;
         realElapsedTime = 0f;
+
         if (spellRing != null)
         {
-            // スペルカードまたは耐久フェーズならリングを出す
-            if (phases[index].type == PhaseType.SpellCard || phases[index].type == PhaseType.Endurance)
-                spellRing.Activate(phases[index].timeLimit);
-            else
-                spellRing.Deactivate();
+            if (phase.type != PhaseType.Normal) spellRing.Activate(phase.timeLimit);
+            else spellRing.Deactivate();
         }
+
         if (enemySpellUI != null)
         {
-            if (phases[index].type == PhaseType.SpellCard || phases[index].type == PhaseType.Endurance)
-            {
-                enemySpellUI.DisplaySpell(phases[index].phaseName, 0, 0, phases[index].spellBonus, isSpellFailed);
-            }
-            else
-            {
-                enemySpellUI.HideSpell();
-            }
+            if (phase.type != PhaseType.Normal) enemySpellUI.DisplaySpell(phase.phaseName, 0, 0, phase.spellBonus, isSpellFailed);
+            else enemySpellUI.HideSpell();
         }
 
-        // ==========================================
-        // ★追加：専用背景の生成とフェードイン
-        // ==========================================
         if (phase.spellBackgroundPrefab != null)
         {
-            // すでに背景があれば消す（念のため）
             if (currentBackground != null) currentBackground.FadeOutAndDestroy();
-
-            // 生成 (カメラの奥、または専用レイヤーに配置する設定がプレハブ側に必要)
             GameObject bgObj = Instantiate(phase.spellBackgroundPrefab, Vector3.zero, Quaternion.identity);
             currentBackground = bgObj.GetComponent<SpellBackgroundController>();
-
-            if (currentBackground != null)
-            {
-                currentBackground.FadeIn();
-            }
-            else
-            {
-                Debug.LogError($"背景プレハブ {phase.spellBackgroundPrefab.name} に SpellBackgroundController が付いていません。");
-            }
+            if (currentBackground != null) currentBackground.FadeIn();
         }
-
     }
     /// <summary>
     /// 画面内のすべての敵弾を SCORE00 アイテムに変換する
@@ -586,12 +583,13 @@ public class EnemyStatus : MonoBehaviour
     IEnumerator PhaseTransitionSequence()
     {
         isTransitioning = true;
-        int nextIndex = currentPhaseIndex + 1;
-        bool hasNextPhase = nextIndex < phases.Count;
+        int nextIndex = currentPhaseIndex + 1;// ★修正：デバッグモードなら「次のフェーズはない」ものとして扱う
+        bool hasNextPhase = !isSinglePhaseTestMode && (nextIndex < phases.Count);
         if (hasNextPhase)
         {
             if (spellRing != null) spellRing.Deactivate();
         }
+
         // 1. リザルト用データの計算（重複を整理）
         int bonusAmount = (int)currentSpellBonus;
         float clearTime = phases[currentPhaseIndex].timeLimit - currentTimer;
@@ -647,7 +645,7 @@ public class EnemyStatus : MonoBehaviour
                 Destroy(currentUI.gameObject);
                 currentUI = null;
             }
-            if (ItemSpawner.Instance != null)
+            if (ItemSpawner.Instance != null && !BossPracticeManager.IsPracticeMode)
             {
                 // 現在のフェーズのドロップ設定を参照
                 ItemSpawner.Instance.DropItemsOnDeath(
@@ -690,18 +688,75 @@ public class EnemyStatus : MonoBehaviour
         }
         else
         {
-            // ========================================================
-            // 最終フェーズ：背景は消さずに DeathSequence へ
-            // ========================================================
+            // 最終フェーズ終了時
             if (currentUI != null) Destroy(currentUI.gameObject);
-            StartCoroutine(DeathSequence(bonusAmount, clearTime, realElapsedTime, isGetBonus, isCaptureTimeoutFailure));
+
+            // 設定されたタイプに応じてコルーチンを呼び分ける
+            switch (exitType)
+            {
+                case BossExitType.Standard:
+                    StartCoroutine(DeathSequence(bonusAmount, clearTime, realElapsedTime, isGetBonus, isCaptureTimeoutFailure));
+                    break;
+                case BossExitType.Instant:
+                    StartCoroutine(InstantDeathSequence(bonusAmount, clearTime, realElapsedTime, isGetBonus, isCaptureTimeoutFailure));
+                    break;
+                case BossExitType.Retreat:
+                    StartCoroutine(RetreatSequence(bonusAmount, clearTime, realElapsedTime, isGetBonus, isCaptureTimeoutFailure));
+                    break;
+            }
         }
 
         realElapsedTime = 0f;
     }
+    private void FinalizeBossClear(int bonus, float clearTime, float realTime, bool isGet, bool isFail)
+    {
+        isTimerActive = false;
+        ConvertBulletsToItems();
+
+        // ★修正：UI管理ロジックの適正化
+        if (enemySpellUI != null)
+        {
+            enemySpellUI.HideSpell(); // 常に名前は隠す
+
+            // スペルカードまたは耐久フェーズの時だけリザルトを表示する
+            if (phases[currentPhaseIndex].type == PhaseType.SpellCard || phases[currentPhaseIndex].type == PhaseType.Endurance)
+            {
+                enemySpellUI.ShowSpellResult(bonus, clearTime, realTime, isGet, isFail);
+
+                // 取得成功時のみスコア加算
+                if (isGet && ScoreManager.Instance != null)
+                {
+                    ScoreManager.Instance.AddScore((long)bonus);
+                }
+            }
+        }
+
+        if (BossTimerUI.Instance != null) BossTimerUI.Instance.gameObject.SetActive(false);
+        if (BossLifeCountUI.Instance != null) BossLifeCountUI.Instance.Hide();
+        if (spellRing != null) spellRing.Deactivate();
+
+        if (ItemSpawner.Instance != null && !BossPracticeManager.IsPracticeMode)
+        {
+            ItemSpawner.Instance.DropItemsOnDeath(transform.position, phases[currentPhaseIndex].powerDropCount, phases[currentPhaseIndex].scoreDropCount);
+        }
+        DropSpecialItem(currentPhaseIndex);
+
+        if (currentBackground != null)
+        {
+            currentBackground.FadeOutAndDestroy();
+            currentBackground = null;
+        }
+
+        // オーラ等の演出用パーツ（SpriteRendererを持たないもの）のみをオフにする
+        foreach (Transform child in transform)
+        {
+            if (child.GetComponent<SpriteRenderer>() == null)
+                child.gameObject.SetActive(false);
+        }
+    }
     private void DropSpecialItem(int phaseIndex)
     {
-        if (ItemSpawner.Instance == null) return;
+        if (ItemSpawner.Instance == null ||BossPracticeManager.IsPracticeMode) return;
 
         SpecialDropType dropType = phases[phaseIndex].specialDrop;
         if (dropType == SpecialDropType.None) return;
