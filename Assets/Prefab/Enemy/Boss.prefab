@@ -306,9 +306,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ba4c6afa8b269fd4a9dc47f4fe9ef03f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  isSinglePhaseTestMode: 0
+  startPhaseIndex: 0
   bossName: Hayase Yuuka
   phases:
   - phaseName: NonSpell1
+    moveTargetPos: {x: -2, y: 2}
+    initialMoveWeight: 60
+    phaseMoveWeight: 60
     maxHP: 1000
     type: 0
     shotDamageRate: 60
@@ -325,6 +330,9 @@ MonoBehaviour:
     scoreDropCount: 0
     specialDrop: 2
   - phaseName: "\u58F1\u7B26\u300C\u5F3E\u5E55\uFF11\u300D"
+    moveTargetPos: {x: -2, y: 2}
+    initialMoveWeight: 60
+    phaseMoveWeight: 60
     maxHP: 200
     type: 1
     shotDamageRate: 15
@@ -341,6 +349,9 @@ MonoBehaviour:
     scoreDropCount: 30
     specialDrop: 4
   - phaseName: NonSpell2
+    moveTargetPos: {x: -2, y: 2}
+    initialMoveWeight: 60
+    phaseMoveWeight: 60
     maxHP: 1000
     type: 0
     shotDamageRate: 60
@@ -357,6 +368,9 @@ MonoBehaviour:
     scoreDropCount: 0
     specialDrop: 2
   - phaseName: "\u5F10\u7B26\u300C\u5F3E\u5E55\uFF12\u300D"
+    moveTargetPos: {x: -2, y: 2}
+    initialMoveWeight: 60
+    phaseMoveWeight: 60
     maxHP: 200
     type: 1
     shotDamageRate: 15
@@ -373,10 +387,13 @@ MonoBehaviour:
     scoreDropCount: 30
     specialDrop: 4
   bulletClearPrefab: {fileID: 6575740104421894055, guid: f24413bf391b54e41a2768d690b51a76, type: 3}
-  enemySpellUI: {fileID: 0}
   enemyMarkerPrefab: {fileID: 5725931542754004518, guid: f23a64b249779594c88afb4817d4c845, type: 3}
   healthBarPrefab: {fileID: 2193791860109990607, guid: 86e7816db63040945a85fb4892729128, type: 3}
   spellRing: {fileID: 6278502113668564668}
+  exitType: 0
+  retreatWaitTime: 0.8
+  retreatMoveDir: {x: 0, y: 10, z: 0}
+  retreatSpeed: 8
 --- !u!1 &9062793464921393976
 GameObject:
   m_ObjectHideFlags: 0

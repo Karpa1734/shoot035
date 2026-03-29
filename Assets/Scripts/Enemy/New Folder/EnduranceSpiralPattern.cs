@@ -65,7 +65,7 @@ public class EnduranceSpiralPattern : BossPatternBase
         {
             float currentAngle = angle + (i * 360f / wayCount);
             // íeÇÃê∂ê¨
-            CreateShot(bulletData, transform.position, bulletSpeed, currentAngle);
+            CreateShot(GREEN[0], transform.position, bulletSpeed, currentAngle);
         }
     }
 

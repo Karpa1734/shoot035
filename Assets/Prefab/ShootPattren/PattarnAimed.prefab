@@ -44,14 +44,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f21cec3665ab43d48b8b00e7dea5af0d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  bulletData: {fileID: 11400000, guid: 7f0f4d2078bae2a47abb259057cf4109, type: 2}
+  laserStreamHeadPrefab: {fileID: 5758609282292670657, guid: 4b829daa26be2ee4f9e40f6553502fc9, type: 3}
+  bulletData: {fileID: 11400000, guid: 260a096df65da004bbad4ed3d9d4223b, type: 2}
+  bulletData2: {fileID: 11400000, guid: f273ab83a2a68f84ba3403421d5b9427, type: 2}
   nWay: 5
   spreadAngle: 30
   bulletSpeed: 4
-  fireInterval: 1.2
-  moveMinX: 0.5
-  moveMaxX: 1.5
+  fireInterval: 1
+  moveMinX: 0.2
+  moveMaxX: 0.5
   moveMinY: 0.2
-  moveMaxY: 0.8
+  moveMaxY: 0.5
   moveWeight: 60
   moveMaxSpeed: 2

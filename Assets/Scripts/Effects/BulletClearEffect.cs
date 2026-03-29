@@ -21,31 +21,48 @@ public class BulletClearEffect : MonoBehaviour
         {
             currentRadius += expandSpeed * Time.deltaTime;
 
-            // 画面内の「EnemyBullet」タグが付いた全オブジェクトを取得
+            // --- 1. 通常の弾（EnemyBullet）の消去 ---
             GameObject[] bullets = GameObject.FindGameObjectsWithTag("EnemyBullet");
-
             foreach (GameObject b in bullets)
             {
                 if (b == null) continue;
-
-                // 中心からの距離を計算
                 float distance = Vector2.Distance(transform.position, b.transform.position);
-
-                // 範囲内に入っていたら消滅エフェクト付きで消す
                 if (distance < currentRadius)
                 {
                     EnemyBullet eb = b.GetComponent<EnemyBullet>();
-                    if (eb != null)
-                    {
-                        eb.Deactivate(true); // 消滅アニメーションを再生して消す
-                    }
+                    if (eb != null) eb.Deactivate(true);
+                }
+            }
+
+            // --- 2. ストリームレーザー（EnemyLaserStream）の消去 ---
+            EnemyLaserStream[] streams = Object.FindObjectsByType<EnemyLaserStream>(FindObjectsSortMode.None);
+            foreach (EnemyLaserStream s in streams)
+            {
+                if (s == null) continue;
+                float distance = Vector2.Distance(transform.position, s.transform.position);
+                if (distance < currentRadius) s.ClearLaser();
+            }
+
+            // --- 3. ★設置型・極太レーザー（EnemyLaserBeam）の消去を追加 ---
+            // FindObjectsByType を使用して全てのレーザーを取得
+            EnemyLaserBeam[] beams = Object.FindObjectsByType<EnemyLaserBeam>(FindObjectsSortMode.None);
+            foreach (EnemyLaserBeam beam in beams)
+            {
+                if (beam == null) continue;
+
+                // レーザーの起点（設置点）との距離を計算
+                float distance = Vector2.Distance(transform.position, beam.transform.position);
+
+                if (distance < currentRadius)
+                {
+                    // ★重要：Destroy ではなく ForceClose を呼ぶことで「細くなって消える」
+                    beam.ForceClose();
                 }
             }
 
             yield return null;
         }
 
-        // 全て消し終わったらこのエフェクトオブジェクト自体を破棄
         Destroy(gameObject);
     }
 }

@@ -48,27 +48,24 @@ public class PlayerHitHandler : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        // 1. 敵弾の消去（かすり等のために無敵に関わらず実行）
+        // 1. 敵弾の消去（レーザーは消さない）
         if (collision.CompareTag("EnemyBullet"))
         {
             EnemyBullet bullet = collision.GetComponent<EnemyBullet>();
             if (bullet != null) bullet.Deactivate(true);
         }
 
-        // ★修正：アイテム回収をガードの前に持ってくる
         if (collision.CompareTag("Item"))
         {
             itemHandler.HandleItemCollision(collision);
-            return; // アイテムを処理したらここで終わる
+            return;
         }
 
-        // 2. ミス判定のガード（ここから下は敵や弾の「ダメージ」に関する処理）
         if (playerMove.IsInvincible || currentState != PlayerState.Normal) return;
 
-        // 3. 被弾開始
-        if (collision.CompareTag("EnemyBullet") || collision.CompareTag("Enemy"))
+        // 3. 被弾開始（Laserタグを追加。ただし破壊はしない）
+        if (collision.CompareTag("EnemyBullet") || collision.CompareTag("Enemy") || collision.CompareTag("Laser"))
         {
-            // 以前と同じダメージ処理...
             EnemyStatus boss = Object.FindFirstObjectByType<EnemyStatus>();
             if (boss != null) boss.FailSpell();
 
@@ -152,7 +149,7 @@ public class PlayerHitHandler : MonoBehaviour
         {
             // --- 修正ポイント：最後の残機だった場合 ---
             // 爆発を見てから1秒間待機する
-            yield return new WaitForSeconds(1.0f);
+            yield return new WaitForSeconds(0.5f);
 
             // ゲームオーバーUIの表示指示
             PlayerStatusManager.Instance.TriggerGameOver();

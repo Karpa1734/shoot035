@@ -63,7 +63,14 @@ public class Shockwave : MonoBehaviour
                 bullet.Deactivate(true); //
             }
         }
-
+        // 2. ★レーザーの先頭（EnemyLaserStream）の検知と消滅処理
+        // レーザーは EnemyBullet ではないため、別途コンポーネントをチェックします
+        EnemyLaserStream laser = collision.GetComponent<EnemyLaserStream>();
+        if (laser != null)
+        {
+            // Debug.Log("レーザーのヘッドを検知！一括消去します");
+            laser.ClearLaser(); // 先頭を破壊し、繋がっている「節」もすべて消去する
+        }
         EnemyStatus enemy = collision.GetComponent<EnemyStatus>();
         if (enemy != null) enemy.TakeDamage(damage, true); //
     }

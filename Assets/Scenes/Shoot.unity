@@ -12384,6 +12384,95 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1958698383}
   m_CullTransparentMesh: 1
+--- !u!1 &1975061774
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1975061776}
+  - component: {fileID: 1975061775}
+  m_Layer: 0
+  m_Name: BulletManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1975061775
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1975061774}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8d1315a79f2e4a24aa09ae1da1ed4283, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  additiveMaterial: {fileID: 2100000, guid: b955a6fe290ae404496e5fc9dc6bd3da, type: 2}
+  laserStreamHeadPrefab: {fileID: 5758609282292670657, guid: 4b829daa26be2ee4f9e40f6553502fc9, type: 3}
+  laserBeamPrefab: {fileID: 4456364604320642973, guid: a9f1e03cdf9d3b3429be1484fec91f5c, type: 3}
+  redLaser:
+    mainSprite: {fileID: 7394846351055212603, guid: 3b428c8542c1f3b4eb841f34c211c23e, type: 3}
+    previewSprite: {fileID: 0}
+  orangeLaser:
+    mainSprite: {fileID: -3134984308293451589, guid: 3b428c8542c1f3b4eb841f34c211c23e, type: 3}
+    previewSprite: {fileID: 0}
+  yellowLaser:
+    mainSprite: {fileID: -7086537323571785821, guid: 3b428c8542c1f3b4eb841f34c211c23e, type: 3}
+    previewSprite: {fileID: 0}
+  greenLaser:
+    mainSprite: {fileID: -6330152569626864739, guid: 3b428c8542c1f3b4eb841f34c211c23e, type: 3}
+    previewSprite: {fileID: 0}
+  aquaLaser:
+    mainSprite: {fileID: 7408158033249956994, guid: 3b428c8542c1f3b4eb841f34c211c23e, type: 3}
+    previewSprite: {fileID: 0}
+  blueLaser:
+    mainSprite: {fileID: 7618443584406369654, guid: 3b428c8542c1f3b4eb841f34c211c23e, type: 3}
+    previewSprite: {fileID: 0}
+  purpleLaser:
+    mainSprite: {fileID: 8320944645083979353, guid: 3b428c8542c1f3b4eb841f34c211c23e, type: 3}
+    previewSprite: {fileID: 0}
+  whiteLaser:
+    mainSprite: {fileID: -8599512977041186160, guid: 3b428c8542c1f3b4eb841f34c211c23e, type: 3}
+    previewSprite: {fileID: 0}
+  RED:
+  - {fileID: 11400000, guid: f273ab83a2a68f84ba3403421d5b9427, type: 2}
+  - {fileID: 11400000, guid: cf828854ed3be004d9db138d17a0561d, type: 2}
+  - {fileID: 11400000, guid: cf828854ed3be004d9db138d17a0561d, type: 2}
+  ORANGE:
+  - {fileID: 11400000, guid: 0d154dab70248474ca11ce64db0e21ee, type: 2}
+  YELLOW:
+  - {fileID: 11400000, guid: 6644fbe10fb9faa4c9f389275bdfe007, type: 2}
+  GREEN:
+  - {fileID: 11400000, guid: 9d9e8df0b86abab4c860ea936d62e91a, type: 2}
+  AQUA:
+  - {fileID: 11400000, guid: 260a096df65da004bbad4ed3d9d4223b, type: 2}
+  BLUE:
+  - {fileID: 11400000, guid: 7f0f4d2078bae2a47abb259057cf4109, type: 2}
+  PURPLE:
+  - {fileID: 11400000, guid: bc6219b6791f2784bacbcd01e5450587, type: 2}
+  WHITE:
+  - {fileID: 11400000, guid: 5619ad4038bf44744978ff57297d1c09, type: 2}
+--- !u!4 &1975061776
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1975061774}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -3.7607164, y: -2.4351408, z: 2852.0964}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1987821800
 GameObject:
   m_ObjectHideFlags: 0
@@ -13854,8 +13943,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 39b8b1d8338d8804696dc525e11ae796, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  bossPrefab: {fileID: 7778457711146669226, guid: c256a502aea14054ba39b794c21179ec, type: 3}
-  bossSpawnPosition: {x: -2, y: 3, z: 0}
+  bossPrefab: {fileID: 7778457711146669226, guid: 4045067a7876dcf4b9572078090d80bf, type: 3}
+  bossSpawnPosition: {x: -5, y: 5, z: 0}
   pauseCanvas: {fileID: 1274728656}
   postDeathDelay: 2.5
 --- !u!4 &2146639821
@@ -13896,3 +13985,4 @@ SceneRoots:
   - {fileID: 1467714285}
   - {fileID: 483514024}
   - {fileID: 1244173532}
+  - {fileID: 1975061776}

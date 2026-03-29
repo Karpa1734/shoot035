@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem.XR;
 
 // フェーズの種類を定義
 public enum BossExitType { Standard, Instant, Retreat }
@@ -10,9 +11,12 @@ public enum PhaseType { Normal, SpellCard, Endurance }
 // EnemyStatus.cs の冒頭（PhaseType の下あたり）に追加
 public enum SpecialDropType { None, Bomb, BombPiece, Extend, ExtendPiece }
 [Serializable]
-public struct BossPhaseData
+public class BossPhaseData
 {
     public string phaseName;
+    public Vector2 moveTargetPos = new Vector2(-2,2); // ★追加：このフェーズの定位置（デフォルト (0, 2.5) など）
+    public float initialMoveWeight = 60;
+    public float phaseMoveWeight = 60f;
     public float maxHP;
     public PhaseType type;
 
@@ -90,7 +94,7 @@ public class EnemyStatus : MonoBehaviour
     public float retreatSpeed = 8f;
     // EnemyStatus.cs 内
     public List<BossPhaseData> Phases => phases; // これを追加して外から見れるようにする
-
+    private BossController controller; // Awakeなどで取得済みとする
     // ★追加：現在表示中の背景のコントローラー
     private SpellBackgroundController currentBackground;
     void Awake()
@@ -106,7 +110,7 @@ public class EnemyStatus : MonoBehaviour
         {
             currentPhaseIndex = 0;
         }
-
+        controller = GetComponent<BossController>();
         InitializePhase(currentPhaseIndex);
     }
 
@@ -138,11 +142,24 @@ public class EnemyStatus : MonoBehaviour
 
         if (BossTimerUI.Instance != null) BossTimerUI.Instance.targetStatus = this;
         if (BossLifeCountUI.Instance != null) BossLifeCountUI.Instance.Initialize(this);
-        // ★修正：常に0ではなく、Awakeで決まった currentPhaseIndex を使う
-        TriggerSpellDeclaration(currentPhaseIndex);
+
+        StartCoroutine(StartPracticeSequence());
     }
     // --- EnemyStatus.cs ---
+    private IEnumerator StartPracticeSequence()
+    {
+        // ★修正：MoveToPhasePosition ではなく SetMovePosition03 を使用
+        float weight = phases[currentPhaseIndex].initialMoveWeight;
+        yield return StartCoroutine(SetMovePosition03(
+            phases[currentPhaseIndex].moveTargetPos.x,
+            phases[currentPhaseIndex].moveTargetPos.y,
+            weight
+        ));
 
+        // 移動完了後に初めて宣言・初期化を行う
+        TriggerSpellDeclaration(currentPhaseIndex);
+        InitializePhaseLogic(currentPhaseIndex); // ★追加：パターンの生成などもここで行う
+    }
     public void FailSpell()
     {
         if (phases[currentPhaseIndex].type == PhaseType.SpellCard || phases[currentPhaseIndex].type == PhaseType.Endurance)
@@ -155,7 +172,36 @@ public class EnemyStatus : MonoBehaviour
                 enemySpellUI.UpdateBonusText(0, true);
         }
     }
+    // 提供された移動ロジックの統合
+    public IEnumerator SetMovePosition03(float tx, float ty, float weight)
+    {
+        isInvincible = true; // ★追加：移動開始時に無敵ON
+        if (controller != null) controller.SetMoving(true);
 
+        Vector3 startPos = transform.parent != null ? transform.parent.position : transform.position;
+        Vector3 targetPos = new Vector3(tx, ty, 0);
+
+        float duration = Mathf.Max(0.01f, weight / 60.0f);
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            t = Mathf.Sin(t * Mathf.PI * 0.5f);
+
+            Vector3 currentPos = Vector3.Lerp(startPos, targetPos, t);
+            if (transform.parent != null) transform.parent.position = currentPos;
+            else transform.position = currentPos;
+
+            yield return null;
+        }
+
+        if (transform.parent != null) transform.parent.position = targetPos;
+        else transform.position = targetPos;
+
+        if (controller != null) controller.SetMoving(false);
+    }
     void InitializePhase(int index)
     {
         if (index >= phases.Count) return;
@@ -163,8 +209,6 @@ public class EnemyStatus : MonoBehaviour
         maxHP = phases[index].maxHP;
         currentHP = maxHP;
         flickerLifeThreshold = maxHP * 0.2f;
-
-        InitializePhaseLogic(index);
     }
 
     private void SpawnMarker()
@@ -489,6 +533,8 @@ public class EnemyStatus : MonoBehaviour
 
     private void InitializePhaseLogic(int index)
     {
+        // ★追加：もし古いパターンが残っていたら確実に消してから次を作る
+        if (currentPatternObj != null) Destroy(currentPatternObj);
         // --- 修正：タイマー初期化をここで行わない（TriggerSpellDeclarationに移行） ---
         // currentTimer = phases[index].timeLimit; // 削除
         // isTimerActive = currentTimer > 0;       // 削除
@@ -664,17 +710,14 @@ public class EnemyStatus : MonoBehaviour
 
             if (phases[currentPhaseIndex].declareImmediately) TriggerSpellDeclaration(currentPhaseIndex);
 
-            // 移動処理
-            BossController ctrl = GetComponent<BossController>();
-            if (ctrl != null) ctrl.SetMoving(true);
-            Vector3 transitionTarget = new Vector3(-2.0f, 2.0f, 0);
-            while (Vector3.Distance(transform.position, transitionTarget) > 0.05f)
-            {
-                transform.position = Vector3.MoveTowards(transform.position, transitionTarget, 3f * Time.deltaTime);
-                yield return null;
-            }
-            if (ctrl != null) ctrl.SetMoving(false);
-
+            // 2. ★修正：次のフェーズの定位置へ、指定の Weight で移動（ここで完了を待機）
+            float weight = phases[currentPhaseIndex].phaseMoveWeight;
+            yield return StartCoroutine(SetMovePosition03(
+                phases[currentPhaseIndex].moveTargetPos.x,
+                phases[currentPhaseIndex].moveTargetPos.y,
+                weight
+            ));
+            // 3. 到着後の短い余韻（ピタッと止まってから攻撃を始めるための間）
             yield return new WaitForSeconds(0.5f);
 
             if (!phases[currentPhaseIndex].declareImmediately) TriggerSpellDeclaration(currentPhaseIndex);
