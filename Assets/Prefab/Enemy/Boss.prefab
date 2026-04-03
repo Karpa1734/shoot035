@@ -316,11 +316,11 @@ MonoBehaviour:
     phaseMoveWeight: 60
     maxHP: 1000
     type: 0
-    shotDamageRate: 60
-    bombDamageRate: 30
-    patternPrefab: {fileID: 1781038096083142761, guid: 238c22b2267671d49aaf857f60461da9, type: 3}
+    shotDamageRate: 40
+    bombDamageRate: 20
+    patternPrefab: {fileID: 1781038096083142761, guid: 6cd23493986b79b419000dabff060d6a, type: 3}
     startsNewBar: 1
-    timeLimit: 30
+    timeLimit: 50
     spellBonus: 0
     invincibleDuration: 3
     hideHealthBar: 0
@@ -354,11 +354,11 @@ MonoBehaviour:
     phaseMoveWeight: 60
     maxHP: 1000
     type: 0
-    shotDamageRate: 60
-    bombDamageRate: 30
-    patternPrefab: {fileID: 1781038096083142761, guid: 238c22b2267671d49aaf857f60461da9, type: 3}
+    shotDamageRate: 40
+    bombDamageRate: 20
+    patternPrefab: {fileID: 1781038096083142761, guid: 3426221611e052b42aea58bed1070cbe, type: 3}
     startsNewBar: 1
-    timeLimit: 30
+    timeLimit: 50
     spellBonus: 0
     invincibleDuration: 3
     hideHealthBar: 0
@@ -386,6 +386,44 @@ MonoBehaviour:
     powerDropCount: 30
     scoreDropCount: 30
     specialDrop: 4
+  - phaseName: NonSpell3
+    moveTargetPos: {x: -2, y: 2}
+    initialMoveWeight: 60
+    phaseMoveWeight: 60
+    maxHP: 1000
+    type: 0
+    shotDamageRate: 40
+    bombDamageRate: 20
+    patternPrefab: {fileID: 1781038096083142761, guid: 9f3acdd78527abe4688fb14e15181cb8, type: 3}
+    startsNewBar: 1
+    timeLimit: 50
+    spellBonus: 0
+    invincibleDuration: 3
+    hideHealthBar: 0
+    declareImmediately: 0
+    spellBackgroundPrefab: {fileID: 0}
+    powerDropCount: 0
+    scoreDropCount: 0
+    specialDrop: 2
+  - phaseName: NonSpell4
+    moveTargetPos: {x: -2, y: 2}
+    initialMoveWeight: 60
+    phaseMoveWeight: 60
+    maxHP: 1000
+    type: 0
+    shotDamageRate: 40
+    bombDamageRate: 20
+    patternPrefab: {fileID: 1781038096083142761, guid: 15ba895c4dd74614fb82ea1afbeff821, type: 3}
+    startsNewBar: 1
+    timeLimit: 50
+    spellBonus: 0
+    invincibleDuration: 3
+    hideHealthBar: 0
+    declareImmediately: 0
+    spellBackgroundPrefab: {fileID: 0}
+    powerDropCount: 0
+    scoreDropCount: 0
+    specialDrop: 2
   bulletClearPrefab: {fileID: 6575740104421894055, guid: f24413bf391b54e41a2768d690b51a76, type: 3}
   enemyMarkerPrefab: {fileID: 5725931542754004518, guid: f23a64b249779594c88afb4817d4c845, type: 3}
   healthBarPrefab: {fileID: 2193791860109990607, guid: 86e7816db63040945a85fb4892729128, type: 3}

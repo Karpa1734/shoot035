@@ -16,7 +16,8 @@ public abstract class BossPatternBase : MonoBehaviour
 
     protected Collider2D parentCollider;
     protected SpriteRenderer bossRenderer;
-
+    [Header("Bit Settings")]
+    public GameObject bitPrefab; // ★ここでPrefabを指定できるようにする
     // --- 弾データ配列 ---
     protected BulletData[] RED => BulletManager.Instance.RED;
     protected BulletData[] ORANGE => BulletManager.Instance.ORANGE;
@@ -29,6 +30,16 @@ public abstract class BossPatternBase : MonoBehaviour
 
     protected Material GetAdditive() => BulletManager.Instance.additiveMaterial;
     protected GameObject GetLaserHeadPrefab() => BulletManager.Instance.laserStreamHeadPrefab;
+    // ビットを管理するリスト
+    protected List<GameObject> activeBits = new List<GameObject>();
+
+    [Header("Movement Settings (Move03)")]
+    public float moveMinX = 0.2f;
+    public float moveMaxX = 0.5f;
+    public float moveMinY = 0.2f;
+    public float moveMaxY = 0.5f;
+    public float moveWeight = 60f; // 移動の速さ（重み）
+    public float moveInterval = 2.0f; // 次の移動までの待機時間
 
 
     protected virtual void Awake()
@@ -145,6 +156,38 @@ public abstract class BossPatternBase : MonoBehaviour
         return DanmakuFunctions.CreateGravityShot(data.bulletPrefab, data, position, speed, angle, gAccel, gAngle, gMax, delay, mat);
     }
 
+    /// <summary>
+    /// 指定した頂点数（edges）の多角形形状で弾を発射します。
+    /// </summary>
+    /// <param name="edges">頂点数（3なら三角形、4なら四角形）</param>
+    /// <param name="baseSpeed">辺の中央部分の速度（最小速度）</param>
+    protected void CreatePolygonShot(BulletData data, Vector3 position, int edges, int bulletCount, float baseSpeed, float startAngle, float delay = 0, bool isAdditive = false)
+    {
+        if (data == null || edges < 3) return;
+
+        // 1辺あたりの角度範囲 (例: 三角形なら120度)
+        float segmentAngle = 360f / edges;
+
+        for (int i = 0; i < bulletCount; i++)
+        {
+            // 弾の発射角度
+            float angleDeg = i * (360f / bulletCount) + startAngle;
+
+            // 現在の角度が、1辺の範囲内で中心からどれだけズレているか算出 (-60度 ～ 60度の範囲など)
+            float relativeAngle = ((angleDeg - startAngle) % segmentAngle) - (segmentAngle / 2f);
+
+            // 1/cos(θ) を使って、頂点に向かうほど弾を速くする
+            float rad = relativeAngle * Mathf.Deg2Rad;
+            float speedMultiplier = 1f / Mathf.Cos(rad);
+
+            float finalSpeed = baseSpeed * speedMultiplier;
+
+            // 既存の CreateShot を利用して発射
+            CreateShot(data, position, finalSpeed, angleDeg, delay, isAdditive);
+        }
+    }
+
+
     // --- 移動・特殊演出関連の共通メソッド ---
 
     public IEnumerator SetMovePosition03(float tx, float ty, float weight)
@@ -221,21 +264,30 @@ public abstract class BossPatternBase : MonoBehaviour
     // --- Laser A (設置型) ---
     // 引数を BulletData から BulletManager.LaserColor に変更
     // --- Laser A (設置型) ---
+    // --- Laser A (設置型) ---
     protected void CreateLaserA(int id, float x, float y, float length, float width, BulletManager.LaserColor color, int delay)
     {
-        // プレハブを極太レーザー専用のものに変更
         GameObject obj = Instantiate(BulletManager.Instance.laserBeamPrefab);
         EnemyLaserBeam beam = obj.GetComponent<EnemyLaserBeam>();
-        beam.SetupA(x, y, length, width, color, delay);
+
+        // ★共通プレハブと、色ごとのスプライトを取得
+        GameObject sourcePrefab = BulletManager.Instance.laserSourceEffectPrefab;
+        Sprite sourceSprite = BulletManager.Instance.GetLaserSet(color).sourceEffectSprite;
+
+        beam.SetupA(x, y, length, width, color, delay, sourcePrefab, sourceSprite);
         beamDict[id] = beam;
     }
 
-    // --- Laser B (ボス追従型) ---
     protected void CreateLaserB(int id, float length, float width, BulletManager.LaserColor color, int delay)
     {
         GameObject obj = Instantiate(BulletManager.Instance.laserBeamPrefab);
         EnemyLaserBeam beam = obj.GetComponent<EnemyLaserBeam>();
-        beam.SetupB(length, width, color, delay, transform.parent);
+
+        // ★共通プレハブと、色ごとのスプライトを取得
+        GameObject sourcePrefab = BulletManager.Instance.laserSourceEffectPrefab;
+        Sprite sourceSprite = BulletManager.Instance.GetLaserSet(color).sourceEffectSprite;
+
+        beam.SetupB(length, width, color, delay, transform.parent, sourcePrefab, sourceSprite);
         beamDict[id] = beam;
     }
 
@@ -258,7 +310,7 @@ public abstract class BossPatternBase : MonoBehaviour
 
     // --- Laser B (ボス追従型) ---
     // 引数の最後に bool startClosing を追加
-    protected void SetLaserDataB(int id, int frame, float lengthVel, float dist, float distVel, float dAngle, float dAngleVel, float lAngle, float lAngleVel, bool startClosing = false)
+    protected void SetLaserDataB(int id, int frame, float lengthVel, float dist, float distVel, float dAngle, float dAngleVel, float lAngle, float lAngleVel, bool startClosing = false, bool isSmooth = false)
     {
         if (!beamDict.ContainsKey(id)) return;
         beamDict[id].AddData(new EnemyLaserBeam.LaserTransformData
@@ -271,7 +323,8 @@ public abstract class BossPatternBase : MonoBehaviour
             distAngleVel = dAngleVel,
             laserAngle = lAngle,
             laserAngleVel = lAngleVel,
-            startClosing = startClosing // フラグを渡す
+            startClosing = startClosing,
+            isSmooth = isSmooth // ★フラグを渡す
         });
     }
 
@@ -284,6 +337,35 @@ public abstract class BossPatternBase : MonoBehaviour
             beamDict.Remove(id);
         }
     }
+
+    // 2. ビットを生成する関数
+    protected void CreateOrbitBits(int count, float targetRadius, float expandTime, float orbitSpeed, GameObject bitPrefab)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            float startAngle = i * (360f / count);
+            GameObject bit = Instantiate(bitPrefab, transform.position, Quaternion.identity);
+            EnemyBit bitScript = bit.GetComponent<EnemyBit>();
+
+            if (bitScript != null)
+            {
+                // ビットにパラメータを渡す（親は transform.parent すなわちボスのルート）
+                bitScript.Setup(transform.parent, targetRadius, expandTime, orbitSpeed, startAngle);
+                activeBits.Add(bit);
+            }
+        }
+    }
+
+    // 3. 段階移行（スクリプト無効化）時にビットを掃除する
+    protected virtual void OnDisable()
+    {
+        foreach (GameObject bit in activeBits)
+        {
+            if (bit != null) Destroy(bit);
+        }
+        activeBits.Clear();
+    }
+
     protected virtual void OnDestroy()
     {
         if (parentCollider != null) parentCollider.enabled = true;

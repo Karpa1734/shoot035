@@ -1,4 +1,4 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -13,16 +13,24 @@ public class EnemyLaserBeam : MonoBehaviour
     private BoxCollider2D col;
     private BulletManager.LaserSet visualSet;
     private Transform bossTransform;
+    private Transform laserVisualTrans;
 
     private float targetWidth, currentLength;
     private int delayFrames, elapsedFrames, closingFrames;
     private bool isFired = false;
     private bool isClosing = false;
 
+    private float targetDistAngleVel;
+    private bool useSmoothStop = false;
+    private float targetLaserAngleVel;
+
     private float lengthVel, angle, angVel, moveSpeed, moveAngle;
     private float dist, distVel, distAngle, distAngleVel, laserAngle, laserAngleVel;
 
+    private SpriteRenderer sourceEffectSr;
+    private GameObject sourceEffectInstance;
     private List<LaserTransformData> transformQueue = new List<LaserTransformData>();
+    private float closingStartWidth;
 
     [System.Serializable]
     public class LaserTransformData
@@ -32,31 +40,41 @@ public class EnemyLaserBeam : MonoBehaviour
         public float moveSpeed = -999f, moveAngle = -999f;
         public float dist = -999f, distVel = -999f, distAngle = -999f, distAngleVel = -999f, laserAngle = -999f, laserAngleVel = -999f;
         public bool startClosing = false;
+        public bool isSmooth = false;
     }
 
     void Awake()
     {
-        sr = GetComponent<SpriteRenderer>();
-        col = GetComponent<BoxCollider2D>();
-        sr.drawMode = SpriteDrawMode.Simple;
+        Transform child = transform.Find("Visual");
+        if (child != null)
+        {
+            laserVisualTrans = child;
+            sr = child.GetComponent<SpriteRenderer>();
+        }
+        else
+        {
+            laserVisualTrans = transform;
+            sr = GetComponent<SpriteRenderer>();
+        }
 
-        // š‘Îô1FÅ‰‚Í•`‰æ‚ğƒIƒt‚É‚µ‚Ä‚¨‚­
+        col = GetComponent<BoxCollider2D>();
         sr.enabled = false;
     }
 
-    public void SetupA(float x, float y, float length, float width, BulletManager.LaserColor color, int delay)
+    public void SetupA(float x, float y, float length, float width, BulletManager.LaserColor color, int delay, GameObject sourcePrefab, Sprite sourceSprite)
     {
         type = LaserType.A_Stationary;
         transform.position = new Vector3(x, y, 0);
+        SpawnSourceEffect(sourcePrefab, sourceSprite);
         InitializeBase(length, width, color, delay);
     }
 
-    public void SetupB(float length, float width, BulletManager.LaserColor color, int delay, Transform boss)
+    public void SetupB(float length, float width, BulletManager.LaserColor color, int delay, Transform boss, GameObject sourcePrefab, Sprite sourceSprite)
     {
         type = LaserType.B_FollowBoss;
         bossTransform = boss;
-        // š‘Îô2FType B‚Ìê‡A¶¬‚³‚ê‚½uŠÔ‚Éƒ{ƒX‚ÌˆÊ’u‚ÖˆÚ“®‚³‚¹‚é
         if (bossTransform != null) transform.position = bossTransform.position;
+        SpawnSourceEffect(sourcePrefab, sourceSprite);
         InitializeBase(length, width, color, delay);
     }
 
@@ -69,7 +87,8 @@ public class EnemyLaserBeam : MonoBehaviour
         this.elapsedFrames = 0;
         this.closingFrames = 0;
         this.isClosing = false;
-
+        this.laserAngleVel = 0;
+        this.targetLaserAngleVel = 0;
         this.sr.sprite = visualSet.mainSprite;
         this.sr.material = BulletManager.Instance.additiveMaterial;
         this.sr.color = new Color(1, 1, 1, 0.4f);
@@ -83,11 +102,9 @@ public class EnemyLaserBeam : MonoBehaviour
         transformQueue.Add(d);
         transformQueue.Sort((a, b) => a.frame.CompareTo(b.frame));
 
-        // 0ƒtƒŒ[ƒ€–Ú‚Ìƒf[ƒ^‚È‚çA¶¬’¼Œã‚É‚»‚Ìê‚Å”½‰f‚³‚¹‚é
         if (d.frame == 0)
         {
             ApplyTransform(d);
-            // š‘Îô3F0ƒtƒŒ[ƒ€–Ú‚ÌŠp“x‚â‹——£‚ğ‘¦À‚ÉŒvZ‚µAÀ•W‚ğŠm’è‚³‚¹‚é
             if (type == LaserType.A_Stationary) UpdateA();
             else UpdateB();
         }
@@ -96,16 +113,32 @@ public class EnemyLaserBeam : MonoBehaviour
     public void Fire()
     {
         isFired = true;
-        // š‘Îô1FFire‚ªŒÄ‚Î‚ê‚½iƒpƒ‰ƒ[ƒ^İ’è‚ª‘S‚ÄI‚í‚Á‚½j‚Ì‚Å•`‰æ‚ğŠJn‚·‚é
         sr.enabled = true;
     }
 
     public void ForceClose()
     {
         if (isClosing) return;
+
+        closingStartWidth = GetCurrentWidth(); // ç¾åœ¨ã®å¤ªã•ã‚’è¨˜æ†¶
         isClosing = true;
         col.enabled = false;
         lengthVel = 0;
+        closingFrames = 0;
+    }
+
+    private float GetCurrentWidth()
+    {
+        if (elapsedFrames < delayFrames)
+            return targetWidth * 0.5f;
+
+        if (elapsedFrames < delayFrames + ANIM_FRAMES)
+        {
+            float t = (float)(elapsedFrames - delayFrames) / ANIM_FRAMES;
+            return Mathf.Lerp(targetWidth * 0.5f, targetWidth, t);
+        }
+
+        return targetWidth;
     }
 
     void FixedUpdate()
@@ -118,27 +151,51 @@ public class EnemyLaserBeam : MonoBehaviour
             transformQueue.RemoveAt(0);
         }
 
+        // å›è»¢ã®è£œé–“å‡¦ç†
+        if (useSmoothStop)
+        {
+            laserAngleVel = Mathf.Lerp(laserAngleVel, targetLaserAngleVel, 0.1f);
+            distAngleVel = Mathf.Lerp(distAngleVel, targetDistAngleVel, 0.1f);
+        }
+        else
+        {
+            laserAngleVel = targetLaserAngleVel;
+            distAngleVel = targetDistAngleVel;
+        }
+
+        float widthToSet = 0;
+
+        if (isClosing)
+        {
+            closingFrames++;
+            float t = (float)closingFrames / ANIM_FRAMES;
+            widthToSet = Mathf.Lerp(closingStartWidth, 0, t);
+
+            if (closingFrames >= ANIM_FRAMES)
+            {
+                Destroy(gameObject);
+                return;
+            }
+        }
+        else if (elapsedFrames < delayFrames)
+        {
+            widthToSet = targetWidth * 0.5f;
+        }
+        else if (elapsedFrames < delayFrames + ANIM_FRAMES)
+        {
+            float t = (float)(elapsedFrames - delayFrames) / ANIM_FRAMES;
+            widthToSet = Mathf.Lerp(targetWidth * 0.5f, targetWidth, t);
+        }
+        else
+        {
+            widthToSet = targetWidth;
+        }
+
         if (elapsedFrames == delayFrames && !isClosing)
         {
             sr.color = Color.white;
             col.enabled = true;
         }
-
-        float widthToSet = 0;
-        if (elapsedFrames < delayFrames) widthToSet = targetWidth * 0.5f;
-        else if (elapsedFrames < delayFrames + ANIM_FRAMES)
-        {
-            float t = (float)(elapsedFrames - delayFrames) / ANIM_FRAMES;
-            widthToSet = Mathf.Lerp(0, targetWidth, t);
-        }
-        else if (isClosing)
-        {
-            closingFrames++;
-            float t = (float)closingFrames / ANIM_FRAMES;
-            widthToSet = Mathf.Lerp(targetWidth, 0, t);
-            if (closingFrames >= ANIM_FRAMES) Destroy(gameObject);
-        }
-        else widthToSet = targetWidth;
 
         if (type == LaserType.A_Stationary) UpdateA();
         else UpdateB();
@@ -146,7 +203,7 @@ public class EnemyLaserBeam : MonoBehaviour
         UpdateVisuals(widthToSet);
         elapsedFrames++;
 
-        if (currentLength < 0) currentLength = 0;
+        if (!isClosing && currentLength < 0.1f) ForceClose();
     }
 
     private void UpdateA()
@@ -160,8 +217,17 @@ public class EnemyLaserBeam : MonoBehaviour
 
     private void UpdateB()
     {
-        if (bossTransform == null) { Destroy(gameObject); return; }
-        dist += distVel; distAngle += distAngleVel; laserAngle += laserAngleVel;
+        // ãƒœã‚¹ãŒã„ãªããªã£ãŸã‚‰ãƒ•ã‚§ãƒ¼ãƒ‰ã‚¢ã‚¦ãƒˆé–‹å§‹
+        if (bossTransform == null)
+        {
+            ForceClose();
+            return;
+        }
+
+        dist += distVel;
+        distAngle += distAngleVel;
+        laserAngle += laserAngleVel;
+
         if (!isClosing) currentLength += lengthVel;
 
         Vector3 offset = new Vector3(Mathf.Cos(distAngle * Mathf.Deg2Rad), Mathf.Sin(distAngle * Mathf.Deg2Rad), 0) * dist;
@@ -169,38 +235,99 @@ public class EnemyLaserBeam : MonoBehaviour
         transform.rotation = Quaternion.Euler(0, 0, laserAngle - 90f);
     }
 
+    private void OnDestroy()
+    {
+        if (sourceEffectInstance != null) Destroy(sourceEffectInstance);
+    }
+
+    private void SpawnSourceEffect(GameObject prefab, Sprite sprite)
+    {
+        if (prefab != null)
+        {
+            sourceEffectInstance = Instantiate(prefab, transform.position, Quaternion.identity);
+            sourceEffectInstance.transform.SetParent(this.transform);
+            sourceEffectSr = sourceEffectInstance.GetComponent<SpriteRenderer>();
+            if (sourceEffectSr != null) sourceEffectSr.sprite = sprite;
+            sourceEffectInstance.transform.localScale = Vector3.one * 1.5f;
+        }
+    }
+
     private void UpdateVisuals(float w)
     {
-        transform.localScale = new Vector3(w, currentLength, 1f);
+        transform.localScale = Vector3.one;
+
+        if (laserVisualTrans != null)
+        {
+            laserVisualTrans.localScale = new Vector3(w, currentLength, 1f);
+        }
+
+        if (col != null)
+        {
+            float hitboxWidthScale = 0.2f;
+            col.size = new Vector2(w * hitboxWidthScale, currentLength);
+            col.offset = new Vector2(0, currentLength * 0.5f);
+        }
+
+        if (sourceEffectInstance != null && sourceEffectSr != null)
+        {
+            float effectRatio = 1f;
+
+            if (isClosing)
+            {
+                effectRatio = Mathf.Clamp01(w / targetWidth);
+            }
+            // äºˆå‘Šä¸­(elapsedFrames < delayFrames)ã¯ effectRatio = 1.0f ã®ã¾ã¾ç¶­æŒ
+
+            float dynamicScale = 1.5f * effectRatio;
+            sourceEffectInstance.transform.localScale = new Vector3(dynamicScale, dynamicScale, 1f);
+
+            Color c = sourceEffectSr.color;
+            c.a = sr.color.a * effectRatio;
+            sourceEffectSr.color = c;
+
+            sourceEffectInstance.transform.Rotate(0, 0, 400f * Time.deltaTime);
+        }
     }
 
     private void ApplyTransform(LaserTransformData t)
     {
-        if (t.startClosing && !isClosing && elapsedFrames > delayFrames)
+        // æ¶ˆæ»…ãƒ•ãƒ©ã‚°ãŒç«‹ã£ãŸã‚‰å³åº§ã« ForceClose 
+        if (t.startClosing && !isClosing)
         {
-            isClosing = true;
-            col.enabled = false;
-            lengthVel = 0;
+            ForceClose();
+            return;
         }
 
+        this.useSmoothStop = t.isSmooth;
         if (t.lengthVel != -999f) lengthVel = t.lengthVel;
+
         if (type == LaserType.A_Stationary)
         {
             if (t.angle != -999f) angle = t.angle;
             if (t.angVel != -999f) angVel = t.angVel;
             if (t.moveSpeed != -999f) moveSpeed = t.moveSpeed;
             if (t.moveAngle != -999f) moveAngle = t.moveAngle;
-            transform.rotation = Quaternion.Euler(0, 0, angle - 90f); // A‚Ì‰ñ“]XV
+            transform.rotation = Quaternion.Euler(0, 0, angle - 90f);
         }
         else
         {
             if (t.dist != -999f) dist = t.dist;
             if (t.distVel != -999f) distVel = t.distVel;
             if (t.distAngle != -999f) distAngle = t.distAngle;
-            if (t.distAngleVel != -999f) distAngleVel = t.distAngleVel;
+            if (t.distAngleVel != -999f) targetDistAngleVel = t.distAngleVel;
             if (t.laserAngle != -999f) laserAngle = t.laserAngle;
-            if (t.laserAngleVel != -999f) laserAngleVel = t.laserAngleVel;
-            transform.rotation = Quaternion.Euler(0, 0, laserAngle - 90f); // B‚Ì‰ñ“]XV
+
+            if (t.laserAngleVel != -999f)
+            {
+                targetLaserAngleVel = t.laserAngleVel;
+                // 0ãƒ•ãƒ¬ãƒ¼ãƒ ç›®ã‚„ãƒ‘ãƒƒã¨æ­¢ã¾ã‚‹è¨­å®šãªã‚‰å³åº§ã«åæ˜ 
+                if (t.frame == 0 || !useSmoothStop)
+                {
+                    laserAngleVel = t.laserAngleVel;
+                    distAngleVel = t.distAngleVel;
+                }
+            }
+            transform.rotation = Quaternion.Euler(0, 0, laserAngle - 90f);
         }
     }
 }

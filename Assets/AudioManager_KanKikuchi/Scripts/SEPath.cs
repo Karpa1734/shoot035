@@ -9,9 +9,12 @@ public static class SEPath{
 	public const string BOSS_END_END        = "SE/BossEnd_End";
 	public const string BULLETBREAK         = "SE/bulletbreak";
 	public const string CARDCALL            = "SE/cardcall";
+	public const string ENEMY_VANISH_A      = "SE/enemy_vanishA";
 	public const string FAIL                = "SE/fail";
 	public const string GETSPELLCARD        = "SE/getspellcard";
 	public const string JINGLE10            = "SE/Jingle/jingle10";
+	public const string LASER03             = "SE/Laser03";
+	public const string LASER2              = "SE/Laser2";
 	public const string LASER7              = "SE/Laser7";
 	public const string MENUCANCEL          = "SE/menucancel";
 	public const string MENUDECIDE          = "SE/menudecide";

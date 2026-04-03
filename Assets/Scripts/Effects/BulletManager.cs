@@ -7,10 +7,10 @@ public class BulletManager : MonoBehaviour
     [System.Serializable]
     public struct LaserSet
     {
-        public Sprite mainSprite;    // 実体化した時の太いレーザー
-        public Sprite previewSprite; // 設置中の予告線（※現在は本体画像を流用するため予備）
+        public Sprite mainSprite;
+        public Sprite previewSprite;
+        public Sprite sourceEffectSprite; // ★追加：色ごとの弾源スプライト
     }
-
     public enum LaserColor { RED, ORANGE, YELLOW, GREEN, AQUA, BLUE, PURPLE, WHITE }
 
     [Header("Special Materials")]
@@ -19,7 +19,7 @@ public class BulletManager : MonoBehaviour
     [Header("Special Prefabs")]
     public GameObject laserStreamHeadPrefab; // ストリーム用司令塔
     public GameObject laserBeamPrefab;       // 設置型（極太）レーザー用
-
+    public GameObject laserSourceEffectPrefab; // ★追加：共通の弾源プレハブ(1つ)
     [Header("Laser Visuals (8 Colors / 16 Sprites)")]
     public LaserSet redLaser;
     public LaserSet orangeLaser;

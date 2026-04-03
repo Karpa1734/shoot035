@@ -459,7 +459,7 @@ public class EnemyStatus : MonoBehaviour
         Vector3 startPos = transform.position;
         Vector3 targetPos = startPos + new Vector3(UnityEngine.Random.Range(-0.3f, 0.3f), UnityEngine.Random.Range(0.2f, 0.5f), 0);
 
-        int totalFrames = 90;
+        int totalFrames = 60;
         for (int i = 0; i <= totalFrames; i++)
         {
             float t = (float)i / totalFrames;

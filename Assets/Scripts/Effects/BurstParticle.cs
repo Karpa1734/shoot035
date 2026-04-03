@@ -4,19 +4,21 @@ public class BurstParticle : MonoBehaviour
 {
     [Header("動きの設定")]
     public Vector3 velocity;
-    [Tooltip("回転速度の範囲")]
     public float rotationSpeed = 360f;
-    [Tooltip("生存時間")]
+    // ★外部から上書きされる変数
     public float lifespan = 1.0f;
 
     private float timer = 0f;
     private SpriteRenderer spriteRenderer;
     private Vector3 currentRotation;
+    private Vector3 startScale;
 
     void Start()
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
-        // 爆発の破片っぽさを出すため、ランダムな軸で回転させる
+        // ★実行開始時のスケールを記録（外部から scale が設定された後に実行される）
+        startScale = transform.localScale;
+
         currentRotation = new Vector3(
             Random.Range(-rotationSpeed, rotationSpeed),
             Random.Range(-rotationSpeed, rotationSpeed),
@@ -26,24 +28,23 @@ public class BurstParticle : MonoBehaviour
 
     void Update()
     {
-        // 1. 移動 (Space.Worldで直進させる)
         transform.position += velocity * Time.deltaTime;
-
-        // 2. 回転
         transform.Rotate(currentRotation * Time.deltaTime);
 
-        // 3. 生存時間とフェードアウト
         timer += Time.deltaTime;
+        // ★外部から設定された lifespan を使用して進捗を計算
+        float progress = Mathf.Clamp01(timer / lifespan);
+
+        transform.localScale = Vector3.Lerp(startScale, Vector3.zero, progress);
+
         if (spriteRenderer != null)
         {
-            // 残り時間に応じてアルファ値を下げる
-            float alpha = 1.0f - (timer / lifespan);
+            float alpha = 1.0f - progress;
             Color newColor = spriteRenderer.color;
             newColor.a = Mathf.Max(0f, alpha);
             spriteRenderer.color = newColor;
         }
 
-        // 4. 削除
         if (timer >= lifespan)
         {
             Destroy(gameObject);

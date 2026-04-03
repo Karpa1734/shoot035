@@ -126,7 +126,7 @@ TextureImporter:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 35
+        width: 32
         height: 32
       alignment: 0
       pivot: {x: 0, y: 0}
@@ -146,9 +146,9 @@ TextureImporter:
       name: LaserRoot_1
       rect:
         serializedVersion: 2
-        x: 36
+        x: 32
         y: 0
-        width: 35
+        width: 32
         height: 32
       alignment: 0
       pivot: {x: 0, y: 0}
@@ -168,9 +168,9 @@ TextureImporter:
       name: LaserRoot_2
       rect:
         serializedVersion: 2
-        x: 72
+        x: 64
         y: 0
-        width: 35
+        width: 32
         height: 32
       alignment: 0
       pivot: {x: 0, y: 0}
@@ -190,9 +190,9 @@ TextureImporter:
       name: LaserRoot_3
       rect:
         serializedVersion: 2
-        x: 108
+        x: 96
         y: 0
-        width: 35
+        width: 32
         height: 32
       alignment: 0
       pivot: {x: 0, y: 0}
@@ -212,9 +212,9 @@ TextureImporter:
       name: LaserRoot_4
       rect:
         serializedVersion: 2
-        x: 144
+        x: 128
         y: 0
-        width: 35
+        width: 32
         height: 32
       alignment: 0
       pivot: {x: 0, y: 0}
@@ -234,9 +234,9 @@ TextureImporter:
       name: LaserRoot_5
       rect:
         serializedVersion: 2
-        x: 180
+        x: 160
         y: 0
-        width: 35
+        width: 32
         height: 32
       alignment: 0
       pivot: {x: 0, y: 0}
@@ -256,9 +256,9 @@ TextureImporter:
       name: LaserRoot_6
       rect:
         serializedVersion: 2
-        x: 216
+        x: 192
         y: 0
-        width: 35
+        width: 32
         height: 32
       alignment: 0
       pivot: {x: 0, y: 0}
@@ -278,9 +278,9 @@ TextureImporter:
       name: LaserRoot_7
       rect:
         serializedVersion: 2
-        x: 252
+        x: 224
         y: 0
-        width: 35
+        width: 32
         height: 32
       alignment: 0
       pivot: {x: 0, y: 0}
@@ -300,7 +300,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: 21c673d6e81f8ca43a643022ca14020b
     internalID: 0
     vertices: []
     indices: 

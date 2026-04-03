@@ -141,7 +141,11 @@ public class TitleMenuManager : MonoBehaviour
                 break;
             case 9: // Exit (リストの一番下)
                 Debug.Log("Quit Game");
-                Application.Quit();
+#if UNITY_EDITOR
+                UnityEditor.EditorApplication.isPlaying = false;
+#else
+        Application.Quit();//ゲームプレイ終了
+#endif
                 break;
         }
     }
