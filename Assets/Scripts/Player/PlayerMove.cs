@@ -19,6 +19,12 @@ public class PlayerMove : MonoBehaviour
     private float invincibleTimer = 0f;
     private float deathBombTimer = 0f;
 
+    [Header("Ghost Effect Settings")]
+    public GameObject ghostPrefab;      // BulletGhostプレハブを割り当て
+    public float ghostDistance = 0.2f; // どのくらい動いたら残像を出すか
+    public float ghostDuration = 0.4f; // 残像が消えるまでの時間
+    private Vector3 lastGhostPos;       // 最後に残像を出した位置
+
     public bool IsInvincible => invincibleTimer > 0;
     public bool IsInDeathBombWindow => deathBombTimer > 0;
 
@@ -27,7 +33,6 @@ public class PlayerMove : MonoBehaviour
     void Awake()
     {
         Time.timeScale = 1f;
-        //Application.targetFrameRate = 60;
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
     }
@@ -35,9 +40,11 @@ public class PlayerMove : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
-        // スプライトの取得をより確実に
         sr = GetComponent<SpriteRenderer>();
         if (sr == null) sr = GetComponentInChildren<SpriteRenderer>();
+
+        // 残像の初期位置を同期
+        lastGhostPos = transform.position;
     }
 
     void Update()
@@ -45,26 +52,40 @@ public class PlayerMove : MonoBehaviour
         inputVec.x = Input.GetAxisRaw("Horizontal");
         inputVec.y = Input.GetAxisRaw("Vertical");
 
-        // タイマーの更新（計算のみ）
         if (invincibleTimer > 0) invincibleTimer -= Time.deltaTime;
         if (deathBombTimer > 0) deathBombTimer -= Time.deltaTime;
     }
 
-    // 【重要】LateUpdate は Animator の処理が終わった後に呼ばれる
-    // ここで色を塗ることで、Animatorによるリセットを上書きできる
     void LateUpdate()
     {
+        // 1. 無敵時の色更新（既存のロジックを保持）
         if (IsInvincible)
         {
             UpdateInvincibleVisual();
         }
         else
         {
-            // 無敵が終わった瞬間に一度だけ色を戻すための判定
             if (sr != null && sr.color != Color.white)
             {
                 ResetVisual();
             }
+        }
+
+        // 2. ★追加：残像生成ロジック
+        // スロー中かつショットを撃っていない時のみ動作
+        if (Time.timeScale < 0.95f && !Input.GetKey(KeyCode.Z))
+        {
+            float dist = Vector3.Distance(transform.position, lastGhostPos);
+            if (dist > ghostDistance)
+            {
+                SpawnGhost();
+                lastGhostPos = transform.position;
+            }
+        }
+        else
+        {
+            // スロー中でない時は、位置だけ更新し続けて生成をスキップ
+            lastGhostPos = transform.position;
         }
     }
 
@@ -76,6 +97,23 @@ public class PlayerMove : MonoBehaviour
         nextPosition.x = Mathf.Clamp(nextPosition.x, minX, maxX);
         nextPosition.y = Mathf.Clamp(nextPosition.y, minY, maxY);
         rb.MovePosition(nextPosition);
+    }
+
+    // --- ★追加：残像生成メソッド ---
+    private void SpawnGhost()
+    {
+        if (ghostPrefab == null || sr == null) return;
+
+        // 残像を生成
+        GameObject g = Instantiate(ghostPrefab, transform.position, transform.rotation);
+        BulletGhost ghostScript = g.GetComponent<BulletGhost>();
+
+        if (ghostScript != null)
+        {
+            // 現在の自機のスプライト、色、描画順を渡す
+            // 無敵中の青い色もそのまま残像に反映される
+            ghostScript.Initialize(sr.sprite, sr.color, ghostDuration, sr.sortingOrder);
+        }
     }
 
     public void SetInvincible(float duration)
@@ -94,7 +132,6 @@ public class PlayerMove : MonoBehaviour
         if (sr == null) return;
         float pingPong = Mathf.PingPong(Time.time * 20f, 1f);
         float alpha = 0.3f + pingPong * 0.7f;
-        // 青い点滅色を適用
         sr.color = Color.Lerp(new Color(0.4f, 0.4f, 1f, alpha), new Color(1f, 1f, 1f, alpha), pingPong);
     }
 

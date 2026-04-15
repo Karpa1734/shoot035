@@ -38,7 +38,9 @@ public class EnemyBullet : MonoBehaviour
     private float tSpeed, tAngle, tAccel, tMaxSpeed, tAngVel;
     private BulletData tNextData;
     private bool tAimAtPlayer; // 変化時に自機を狙うか
-
+    private Vector3 lastGhostPos;
+    public GameObject ghostPrefab; // 残像用のPrefab（SpriteRendererのみ持つ）
+    public float ghostDistance = 0.3f; // どのくらい動いたら残像を残すか
     // --- 追加：軌道変化データの定義 ---
     [System.Serializable]
     public class BulletTransformData
@@ -235,9 +237,18 @@ public class EnemyBullet : MonoBehaviour
             col.enabled = true;
             if (activeDelayEffect != null) Destroy(activeDelayEffect);
         }
-
-        float dt = 1f / 60f;
-
+        // --- ★残像の生成ロジック ---
+        // スロー中（Time.timeScale < 1.0）かつ、一定距離移動したら生成
+        if (Time.timeScale < 0.95f)
+        {
+            if (Vector3.Distance(transform.position, lastGhostPos) > ghostDistance)
+            {
+                SpawnGhost();
+                lastGhostPos = transform.position;
+            }
+        }
+        //float dt = 1f / 60f;
+        float dt = Time.fixedDeltaTime; // Unityのタイムスケールに同期したデルタタイムを使用する
         // --- タイプ別の特殊計算 ---
         if (bulletType == BulletType.A4_Gravity)
         {
@@ -277,6 +288,19 @@ public class EnemyBullet : MonoBehaviour
         // 画面外判定
         if (Mathf.Abs(transform.position.x) > 10f || Mathf.Abs(transform.position.y) > 10f)
             Deactivate(false);
+    }
+    void SpawnGhost()
+    {
+        if (ghostPrefab == null) return;
+
+        GameObject g = Instantiate(ghostPrefab, transform.position, transform.rotation);
+        BulletGhost ghostScript = g.GetComponent<BulletGhost>();
+
+        if (ghostScript != null && currentData != null)
+        {
+            // 現在の弾の見た目、色、描画順を引き継ぐ
+            ghostScript.Initialize(sr.sprite, Color.white, 0.5f, currentSortingOrder);
+        }
     }
     private void ApplyTransform(BulletTransformData t)
     {

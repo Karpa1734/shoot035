@@ -9,9 +9,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5334330774997269582}
-  - component: {fileID: -7574137615666892177}
+  - component: {fileID: -5178812933114915748}
   m_Layer: 0
-  m_Name: Yuuka_NonSpell01
+  m_Name: Research02
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -32,7 +32,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &-7574137615666892177
+--- !u!114 &-5178812933114915748
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -41,17 +41,17 @@ MonoBehaviour:
   m_GameObject: {fileID: 1781038096083142761}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bdd53892df40ef441aa859ea91dc35fe, type: 3}
+  m_Script: {fileID: 11500000, guid: af242a957eb3bb246a2960674c1f2416, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  bitPrefab: {fileID: 3780036770888531323, guid: fb318e9517f904f46b6c5c843b1a5ff8, type: 3}
+  bitPrefab: {fileID: 0}
   moveMinX: 0.2
   moveMaxX: 0.5
   moveMinY: 0.2
   moveMaxY: 0.5
-  moveWeight: 48
+  moveWeight: 60
   moveInterval: 2
   edges: 3
-  baseSpeed: 2.5
-  bulletCount: 30
+  baseSpeed: 3
+  bulletCount: 24
   fireInterval: 0.3

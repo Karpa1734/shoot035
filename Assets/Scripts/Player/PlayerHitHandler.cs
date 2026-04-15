@@ -49,12 +49,19 @@ public class PlayerHitHandler : MonoBehaviour
     private void OnTriggerEnter2D(Collider2D collision)
     {
         // 1. 敵弾の消去（レーザーは消さない）
-        if (collision.CompareTag("EnemyBullet"))
+        // --- PlayerHitHandler.cs の OnTriggerEnter2D 内 ---
+        if (collision.CompareTag("EnemyBullet") || collision.CompareTag("Enemy") || collision.CompareTag("Laser"))
         {
-            EnemyBullet bullet = collision.GetComponent<EnemyBullet>();
-            if (bullet != null) bullet.Deactivate(true);
-        }
+            EnemyStatus boss = Object.FindFirstObjectByType<EnemyStatus>();
+            if (boss != null) boss.FailSpell();
 
+            // ★追加：被弾した瞬間に時間を通常速度に戻す（食らいボム受付開始前にリセット）
+            Time.timeScale = 1.0f;
+            Time.fixedDeltaTime = 0.02f; //
+
+            currentState = PlayerState.DeathBomb;
+            StartCoroutine(CheckDeathBombRoutine());
+        }
         if (collision.CompareTag("Item"))
         {
             itemHandler.HandleItemCollision(collision);

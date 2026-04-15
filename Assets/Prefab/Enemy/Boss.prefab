@@ -310,7 +310,7 @@ MonoBehaviour:
   startPhaseIndex: 0
   bossName: Hayase Yuuka
   phases:
-  - phaseName: NonSpell1
+  - phaseName: Research01
     moveTargetPos: {x: -2, y: 2}
     initialMoveWeight: 60
     phaseMoveWeight: 60
@@ -318,9 +318,9 @@ MonoBehaviour:
     type: 0
     shotDamageRate: 40
     bombDamageRate: 20
-    patternPrefab: {fileID: 1781038096083142761, guid: 6cd23493986b79b419000dabff060d6a, type: 3}
+    patternPrefab: {fileID: 1781038096083142761, guid: f020bee1f591f98438442d61b8a4810f, type: 3}
     startsNewBar: 1
-    timeLimit: 50
+    timeLimit: 99
     spellBonus: 0
     invincibleDuration: 3
     hideHealthBar: 0
@@ -329,26 +329,7 @@ MonoBehaviour:
     powerDropCount: 0
     scoreDropCount: 0
     specialDrop: 2
-  - phaseName: "\u58F1\u7B26\u300C\u5F3E\u5E55\uFF11\u300D"
-    moveTargetPos: {x: -2, y: 2}
-    initialMoveWeight: 60
-    phaseMoveWeight: 60
-    maxHP: 200
-    type: 1
-    shotDamageRate: 15
-    bombDamageRate: 5
-    patternPrefab: {fileID: 7081024686200239551, guid: f4aace932eaf48f4da53aa38f2089b06, type: 3}
-    startsNewBar: 0
-    timeLimit: 35
-    spellBonus: 1000000
-    invincibleDuration: 3
-    hideHealthBar: 0
-    declareImmediately: 1
-    spellBackgroundPrefab: {fileID: 5052718470905214699, guid: ed075c54aba94674497b932800e74899, type: 3}
-    powerDropCount: 30
-    scoreDropCount: 30
-    specialDrop: 4
-  - phaseName: NonSpell2
+  - phaseName: Research02
     moveTargetPos: {x: -2, y: 2}
     initialMoveWeight: 60
     phaseMoveWeight: 60
@@ -356,9 +337,9 @@ MonoBehaviour:
     type: 0
     shotDamageRate: 40
     bombDamageRate: 20
-    patternPrefab: {fileID: 1781038096083142761, guid: 3426221611e052b42aea58bed1070cbe, type: 3}
+    patternPrefab: {fileID: 1781038096083142761, guid: 261a02400dfb8354ba46eb3b71604fa8, type: 3}
     startsNewBar: 1
-    timeLimit: 50
+    timeLimit: 99
     spellBonus: 0
     invincibleDuration: 3
     hideHealthBar: 0
@@ -367,26 +348,7 @@ MonoBehaviour:
     powerDropCount: 0
     scoreDropCount: 0
     specialDrop: 2
-  - phaseName: "\u5F10\u7B26\u300C\u5F3E\u5E55\uFF12\u300D"
-    moveTargetPos: {x: -2, y: 2}
-    initialMoveWeight: 60
-    phaseMoveWeight: 60
-    maxHP: 200
-    type: 1
-    shotDamageRate: 15
-    bombDamageRate: 5
-    patternPrefab: {fileID: 7081024686200239551, guid: f4aace932eaf48f4da53aa38f2089b06, type: 3}
-    startsNewBar: 0
-    timeLimit: 35
-    spellBonus: 1000000
-    invincibleDuration: 3
-    hideHealthBar: 0
-    declareImmediately: 1
-    spellBackgroundPrefab: {fileID: 5052718470905214699, guid: ed075c54aba94674497b932800e74899, type: 3}
-    powerDropCount: 30
-    scoreDropCount: 30
-    specialDrop: 4
-  - phaseName: NonSpell3
+  - phaseName: Research03
     moveTargetPos: {x: -2, y: 2}
     initialMoveWeight: 60
     phaseMoveWeight: 60
@@ -394,47 +356,9 @@ MonoBehaviour:
     type: 0
     shotDamageRate: 40
     bombDamageRate: 20
-    patternPrefab: {fileID: 1781038096083142761, guid: 9f3acdd78527abe4688fb14e15181cb8, type: 3}
+    patternPrefab: {fileID: 1781038096083142761, guid: 111d1693f73f538499708d9825abbce7, type: 3}
     startsNewBar: 1
-    timeLimit: 50
-    spellBonus: 0
-    invincibleDuration: 3
-    hideHealthBar: 0
-    declareImmediately: 0
-    spellBackgroundPrefab: {fileID: 0}
-    powerDropCount: 0
-    scoreDropCount: 0
-    specialDrop: 2
-  - phaseName: NonSpell4
-    moveTargetPos: {x: -2, y: 2}
-    initialMoveWeight: 60
-    phaseMoveWeight: 60
-    maxHP: 1000
-    type: 0
-    shotDamageRate: 40
-    bombDamageRate: 20
-    patternPrefab: {fileID: 1781038096083142761, guid: 15ba895c4dd74614fb82ea1afbeff821, type: 3}
-    startsNewBar: 1
-    timeLimit: 50
-    spellBonus: 0
-    invincibleDuration: 3
-    hideHealthBar: 0
-    declareImmediately: 0
-    spellBackgroundPrefab: {fileID: 0}
-    powerDropCount: 0
-    scoreDropCount: 0
-    specialDrop: 2
-  - phaseName: NonSpell4
-    moveTargetPos: {x: -2, y: 2}
-    initialMoveWeight: 60
-    phaseMoveWeight: 60
-    maxHP: 1000
-    type: 0
-    shotDamageRate: 40
-    bombDamageRate: 20
-    patternPrefab: {fileID: 1781038096083142761, guid: 15ba895c4dd74614fb82ea1afbeff821, type: 3}
-    startsNewBar: 1
-    timeLimit: 50
+    timeLimit: 99
     spellBonus: 0
     invincibleDuration: 3
     hideHealthBar: 0
